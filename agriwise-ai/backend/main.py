@@ -10,6 +10,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 import json
 import random
+import re
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, Body
@@ -247,21 +248,174 @@ def logout():
 
 @app.post("/api/auth/register")
 def register(payload: dict = Body(...), db: Session = Depends(get_db)):
-    new_user = User(
-        name=payload.get("name", "New Farmer"),
-        email=payload.get("email", f"farmer_{int(datetime.utcnow().timestamp())}@agriwise.ai"),
-        phone=payload.get("phone", "+91 98765 00000"),
-        role=payload.get("role", "FARMER").upper(),
-        state=payload.get("state", "Punjab"),
-        district=payload.get("district", "Ludhiana"),
-        village=payload.get("village", "Sahnewal"),
-        farm_size_acres=float(payload.get("farm_size_acres", 5.0)),
-        experience_years=int(payload.get("experience_years", 10))
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"success": True, "message": "Registration successful", "user_id": new_user.id}
+    name = (payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Full name is required for registration.")
+
+    phone = (payload.get("phone") or "").strip()
+    if not phone or len("".join(filter(str.isdigit, phone))) < 6:
+        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit mobile number.")
+
+    email = (payload.get("email") or "").strip()
+    role = (payload.get("role") or "FARMER").strip().upper()
+    state = (payload.get("state") or "Punjab").strip()
+    district = (payload.get("district") or "Ludhiana").strip()
+    village = (payload.get("village") or "Sahnewal").strip()
+
+    try:
+        farm_size = float(payload.get("farm_size_acres") or 5.0)
+    except (ValueError, TypeError):
+        farm_size = 5.0
+
+    try:
+        exp_years = int(payload.get("experience_years") or 10)
+    except (ValueError, TypeError):
+        exp_years = 10
+
+    # Auto-generate email if missing
+    if not email:
+        clean_name = re.sub(r'[^a-zA-Z0-9]', '', name.lower()) or "user"
+        email = f"{clean_name}.{role.lower()}_{int(datetime.utcnow().timestamp()) % 10000}@agriwise.ai"
+
+    # Check if user with same email or phone exists
+    existing = db.query(User).filter(
+        (User.email == email) | (User.phone == phone)
+    ).first()
+
+    if existing:
+        user = existing
+        # Update details if appropriate
+        user.name = name
+        user.state = state
+        user.district = district
+        user.village = village
+        db.commit()
+    else:
+        new_user = User(
+            name=name,
+            email=email,
+            phone=phone,
+            role=role,
+            state=state,
+            district=district,
+            village=village,
+            farm_size_acres=farm_size,
+            experience_years=exp_years
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        user = new_user
+
+        # Create role-specific models
+        if role == "FARMER":
+            farm = Farm(
+                user_id=user.id,
+                name=f"{village} {name.split()[0]} Farm",
+                location_name=f"{village}, {district}, {state}",
+                latitude=30.9010,
+                longitude=75.8573,
+                area_acres=farm_size,
+                current_crop=payload.get("crops") or "Maize",
+                current_season="Kharif",
+                previous_crop="Wheat",
+                irrigation_method=payload.get("irrigation_method") or "Subsurface Drip + Tube-well"
+            )
+            db.add(farm)
+            db.commit()
+            db.refresh(farm)
+
+            soil = SoilProfile(
+                farm_id=farm.id,
+                soil_type="Alluvial Loam",
+                soil_texture="Loamy",
+                ph=6.8,
+                nitrogen_kg_ha=260.0,
+                phosphorus_kg_ha=22.5,
+                potassium_kg_ha=280.0,
+                organic_carbon_pct=0.62,
+                health_score=85,
+                source_type="Farmer entered",
+                test_date="2026-05-10"
+            )
+            water = WaterProfile(
+                farm_id=farm.id,
+                source=farm.irrigation_method,
+                ph=7.2,
+                ec_ds_m=0.65,
+                tds_ppm=420.0,
+                suitability_score=88
+            )
+            db.add_all([soil, water])
+            db.commit()
+
+        elif role == "DEALER":
+            dealer = Dealer(
+                business_name=payload.get("business_name") or f"{name} Kisan Kendra",
+                owner_name=name,
+                phone=phone,
+                city=district,
+                address=f"{village}, {district}",
+                state=state,
+                rating=4.9,
+                verified=True,
+                delivery_available=True
+            )
+            db.add(dealer)
+            db.commit()
+
+        elif role == "TRANSPORTER":
+            tp = TransportProvider(
+                operator_name=payload.get("business_name") or f"{name} Logistics",
+                phone=phone,
+                vehicle_type=payload.get("vehicle_type") or "Tata 407 (Open Bed)",
+                capacity_tonnes=10.0,
+                base_rate_inr=1800.0,
+                rate_per_km_inr=26.0,
+                location=f"{district} Bypass",
+                available_now=True
+            )
+            db.add(tp)
+            db.commit()
+
+        elif role == "BUYER":
+            buyer = Buyer(
+                company_name=payload.get("business_name") or f"{name} Agro Mills",
+                buyer_type="Food Processor & Miller",
+                contact_person=name,
+                phone=phone,
+                email=email,
+                location=f"{district} Industrial Area",
+                state=state,
+                district=district,
+                crop_required=payload.get("crops") or "Maize",
+                quantity_required_tonnes=500.0,
+                offered_price_q=2350.0,
+                verified=True
+            )
+            db.add(buyer)
+            db.commit()
+
+    token = f"agriwise_reg_tok_{user.role.lower()}_{user.id}_{int(datetime.utcnow().timestamp())}"
+    redirect_url = get_dashboard_redirect(user.role)
+
+    return {
+        "success": True,
+        "message": f"Registration successful! Welcome to AgriWise AI, {user.name}.",
+        "token": token,
+        "redirect_url": redirect_url,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "role": user.role,
+            "state": user.state,
+            "district": user.district,
+            "village": user.village,
+            "farm_size_acres": user.farm_size_acres
+        }
+    }
 
 # ==========================================
 # 3. API: Farm Profile & Analysis

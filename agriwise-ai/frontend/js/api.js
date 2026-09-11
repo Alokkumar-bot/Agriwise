@@ -60,6 +60,10 @@ const AgriAPI = {
     return this.post('/api/auth/logout', {});
   },
 
+  register(userData) {
+    return this.post('/api/auth/register', userData);
+  },
+
   getCurrentUser(role) {
     return this.get('/api/auth/me', role ? { role } : {});
   },
