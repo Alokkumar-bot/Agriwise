@@ -14,17 +14,19 @@ from database import (
     SessionLocal, init_db, User, Farm, SoilProfile, WaterProfile,
     Crop, SeedVariety, FertilizerProduct, Dealer, MarketPrice,
     CropShortage, Buyer, TransportProvider, Order, Notification, ConfigWeights,
-    PaymentTransaction
+    PaymentTransaction, Equipment, EquipmentBooking
 )
 
 def populate_database():
     init_db()
     db = SessionLocal()
 
-    # If already seeded users, check if payments exist
+    # If already seeded users, check if payments or equipment exist
     if db.query(User).count() > 0:
         if db.query(PaymentTransaction).count() == 0:
             seed_payments(db)
+        if db.query(Equipment).count() == 0:
+            seed_equipment(db)
         db.close()
         return
 
@@ -2337,6 +2339,9 @@ def populate_database():
     # 16. Seed Initial Demo Payments
     seed_payments(db)
 
+    # 17. Seed Farm Equipment & Demo Bookings
+    seed_equipment(db)
+
     db.close()
     print("✅ AGRIWISE AI database successfully seeded with realistic Indian agricultural data!")
 
@@ -2440,6 +2445,459 @@ def seed_payments(db):
         db.add(PaymentTransaction(**p))
     db.commit()
     print("💳 Pre-seeded realistic Indian agricultural payment transactions.")
+
+def seed_equipment(db):
+    farmer_user = db.query(User).filter(User.role == "FARMER").first()
+    farmer_id = farmer_user.id if farmer_user else 1
+    farmer_name = farmer_user.name if farmer_user else "Sardar Gurpreet Singh"
+    farmer_phone = farmer_user.phone if farmer_user else "+91 98765 43210"
+
+    equipment_list = [
+        {
+            "name": "John Deere 5310 55HP Tractor",
+            "category": "Tractors",
+            "brand": "John Deere",
+            "model": "5310 GearPro 4WD",
+            "year": 2024,
+            "power_hp": "55 HP",
+            "fuel_type": "Diesel",
+            "capacity_specs": "55 HP, 4WD, 9F+3R GearPro, 2000 kg Hydraulic Lift, Dual Clutch",
+            "hourly_rate": 550.0,
+            "daily_rate": 3800.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 150.0,
+            "operator_charge_per_day": 800.0,
+            "fuel_included_option": True,
+            "fuel_charge_per_hr": 250.0,
+            "fuel_charge_per_day": 1400.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 35.0,
+            "security_deposit": 2000.0,
+            "location": "Sahnewal / Ludhiana, Punjab",
+            "district": "Ludhiana",
+            "state": "Punjab",
+            "distance_km": 3.8,
+            "owner_name": "Gurpreet Singh CHC Machinery Hub",
+            "owner_phone": "+91 98765 43210",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.9,
+            "reviews_count": 42,
+            "image_url": "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "MB Plough, 7-ft Rotavator, Disc Harrow, 9-Tyne Cultivator, 5-Tonne Hydraulic Trolley",
+            "terms": "Valid Govt ID (Aadhaar/DL) required at handover. Full refund on cancellation > 6 hours prior to start. Fuel tank is provided full.",
+            "available": True
+        },
+        {
+            "name": "Mahindra Novo 655 DI 65HP Tractor 4WD",
+            "category": "Tractors",
+            "brand": "Mahindra",
+            "model": "Arjun Novo 655 DI-i 4WD",
+            "year": 2024,
+            "power_hp": "65 HP",
+            "fuel_type": "Diesel",
+            "capacity_specs": "65 HP m-Boost Engine, 4WD, 15F+15R Synchromesh Shuttle, 2200 kg High Precision Hydraulics",
+            "hourly_rate": 600.0,
+            "daily_rate": 4200.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 150.0,
+            "operator_charge_per_day": 850.0,
+            "fuel_included_option": True,
+            "fuel_charge_per_hr": 280.0,
+            "fuel_charge_per_day": 1550.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 38.0,
+            "security_deposit": 2500.0,
+            "location": "Karnal GT Road, Haryana",
+            "district": "Karnal",
+            "state": "Haryana",
+            "distance_km": 5.2,
+            "owner_name": "Kisan Samriddhi Custom Hiring Centre",
+            "owner_phone": "+91 98123 77654",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.8,
+            "reviews_count": 38,
+            "image_url": "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Heavy Laser Land Leveler, Subsoiler, Heavy Duty Rotavator, Multi-Crop Pneumatic Planter",
+            "terms": "Security deposit refunded immediately upon return inspection. Standard diesel fuel policy applies.",
+            "available": True
+        },
+        {
+            "name": "Preet 987 Combine Harvester (Self-Propelled)",
+            "category": "Harvesters",
+            "brand": "Preet",
+            "model": "987 Deluxe Self-Propelled",
+            "year": 2023,
+            "power_hp": "101 HP",
+            "fuel_type": "Diesel",
+            "capacity_specs": "101 HP Turbo Diesel, 14-ft Heavy Cutter Bar, Double Straw Walker, 2400 kg Grain Tank",
+            "hourly_rate": 1800.0,
+            "daily_rate": 14000.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 300.0,
+            "operator_charge_per_day": 1800.0,
+            "fuel_included_option": True,
+            "fuel_charge_per_hr": 750.0,
+            "fuel_charge_per_day": 5500.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 55.0,
+            "security_deposit": 5000.0,
+            "location": "Patiala Rural Bypass, Punjab",
+            "district": "Patiala",
+            "state": "Punjab",
+            "distance_km": 12.4,
+            "owner_name": "Majha Malwa Combine Union",
+            "owner_phone": "+91 98722 55432",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.9,
+            "reviews_count": 64,
+            "image_url": "https://images.unsplash.com/photo-1595856754020-f5093122c608?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Paddy Cutter Bar, Wheat Reel Header, Straw Management System (SMS) attached",
+            "terms": "Certified commercial harvester operator required and included. Minimum 2-hour booking.",
+            "available": True
+        },
+        {
+            "name": "Kirloskar 5HP Diesel Water Pump (Portable)",
+            "category": "Water Pumps",
+            "brand": "Kirloskar",
+            "model": "Mega-T 5HP Portable Engine Pump",
+            "year": 2024,
+            "power_hp": "5 HP",
+            "fuel_type": "Diesel",
+            "capacity_specs": "5 HP 4-Stroke Air-Cooled Diesel, 1200 Litres/min High Discharge, 28m Total Head, Trolley Mounted",
+            "hourly_rate": 150.0,
+            "daily_rate": 900.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 80.0,
+            "operator_charge_per_day": 400.0,
+            "fuel_included_option": True,
+            "fuel_charge_per_hr": 90.0,
+            "fuel_charge_per_day": 500.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 20.0,
+            "security_deposit": 800.0,
+            "location": "Meerut Industrial Area, Uttar Pradesh",
+            "district": "Meerut",
+            "state": "Uttar Pradesh",
+            "distance_km": 2.5,
+            "owner_name": "Chaudhary Tube-Well & Pump Rental",
+            "owner_phone": "+91 94120 88765",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.7,
+            "reviews_count": 52,
+            "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "50-meter Flexible Delivery Hose, 10-meter Spiral Suction Pipe, Foot Valve & Strainer",
+            "terms": "Supplied with suction pipe and clamps. Caution deposit refunded after water test run.",
+            "available": True
+        },
+        {
+            "name": "Shaktiman Semi-Champion Rotavator (7 Feet)",
+            "category": "Rotavators",
+            "brand": "Shaktiman",
+            "model": "Semi-Champion 205 (7 Feet)",
+            "year": 2024,
+            "power_hp": "Requires 45-60 HP Tractor",
+            "fuel_type": "PTO Driven",
+            "capacity_specs": "7-ft Width, 48 Boron Steel L-Blades, Multi-Speed Heavy Duty Gearbox, Depth up to 7 inches",
+            "hourly_rate": 300.0,
+            "daily_rate": 2000.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 120.0,
+            "operator_charge_per_day": 600.0,
+            "fuel_included_option": False,
+            "fuel_charge_per_hr": 0.0,
+            "fuel_charge_per_day": 0.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 25.0,
+            "security_deposit": 1500.0,
+            "location": "Nashik Agri Market, Maharashtra",
+            "district": "Nashik",
+            "state": "Maharashtra",
+            "distance_km": 6.8,
+            "owner_name": "Sahyadri Agro Machinery Bank",
+            "owner_phone": "+91 98230 44556",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.8,
+            "reviews_count": 29,
+            "image_url": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Connects to any standard 540 RPM PTO shaft. Fits 45-75 HP Category II tractors.",
+            "terms": "Please verify PTO spline match (6-spline standard). Full refund if cancelled > 6 hrs prior.",
+            "available": True
+        },
+        {
+            "name": "National Seed-cum-Fertilizer Drill (11-Tyne)",
+            "category": "Seed Drills",
+            "brand": "National Agri",
+            "model": "Automatic 11-Tyne Dual Box Drill",
+            "year": 2023,
+            "power_hp": "Requires 35-50 HP Tractor",
+            "fuel_type": "Ground Wheel Driven",
+            "capacity_specs": "11 Tynes, Dual Hopper (Seed 60kg + Fertilizer 65kg), Fluted Roller Seed Metering System",
+            "hourly_rate": 250.0,
+            "daily_rate": 1600.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 100.0,
+            "operator_charge_per_day": 550.0,
+            "fuel_included_option": False,
+            "fuel_charge_per_hr": 0.0,
+            "fuel_charge_per_day": 0.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 25.0,
+            "security_deposit": 1200.0,
+            "location": "Indore Mandi Hub, Madhya Pradesh",
+            "district": "Indore",
+            "state": "Madhya Pradesh",
+            "distance_km": 8.0,
+            "owner_name": "Malwa Kisan Seed Tech CHC",
+            "owner_phone": "+91 97555 33211",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.7,
+            "reviews_count": 23,
+            "image_url": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Calibrated for Wheat, Mustard, Gram, Soybeans, Maize with individual depth adjustments.",
+            "terms": "Clean seed hoppers after use. Return in undamaged working order for instant deposit release.",
+            "available": True
+        },
+        {
+            "name": "Landforce Multi-Crop Thresher (PTO Driven)",
+            "category": "Threshers",
+            "brand": "Landforce",
+            "model": "Multi-Crop Haramba Thresher 550",
+            "year": 2023,
+            "power_hp": "Requires 40+ HP Tractor",
+            "fuel_type": "PTO Driven",
+            "capacity_specs": "15-20 Quintals/hr Output, Double Blower Dust Separator, Sieves for Wheat/Maize/Soybean",
+            "hourly_rate": 400.0,
+            "daily_rate": 2800.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 150.0,
+            "operator_charge_per_day": 800.0,
+            "fuel_included_option": False,
+            "fuel_charge_per_hr": 0.0,
+            "fuel_charge_per_day": 0.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 30.0,
+            "security_deposit": 2000.0,
+            "location": "Guntur Agriculture Market Yard, AP",
+            "district": "Guntur",
+            "state": "Andhra Pradesh",
+            "distance_km": 11.5,
+            "owner_name": "Coastal Andhra Farm Services",
+            "owner_phone": "+91 98480 66789",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.8,
+            "reviews_count": 31,
+            "image_url": "https://images.unsplash.com/photo-1595856754020-f5093122c608?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Automatic Feeding Hopper, Elevator Bagging Chute, Variable Speed Pulleys",
+            "terms": "Includes emergency stop mechanism. Operating instructions provided upon delivery.",
+            "available": True
+        },
+        {
+            "name": "Aspee HTP Tractor-Mounted Boom Sprayer (400L)",
+            "category": "Sprayers",
+            "brand": "Aspee",
+            "model": "HTP 400L Boom Sprayer",
+            "year": 2024,
+            "power_hp": "Requires 30+ HP Tractor",
+            "fuel_type": "PTO Driven",
+            "capacity_specs": "400-Litre Heavy Tank, 30-ft Folding Boom, 22 Italian Ceramic Nozzles, 35 Bar Pressure Pump",
+            "hourly_rate": 200.0,
+            "daily_rate": 1400.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 120.0,
+            "operator_charge_per_day": 600.0,
+            "fuel_included_option": False,
+            "fuel_charge_per_hr": 0.0,
+            "fuel_charge_per_day": 0.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 20.0,
+            "security_deposit": 1000.0,
+            "location": "Bathinda Cantt Road, Punjab",
+            "district": "Bathinda",
+            "state": "Punjab",
+            "distance_km": 4.9,
+            "owner_name": "Bathinda Precision Agro Implements",
+            "owner_phone": "+91 98760 99881",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.6,
+            "reviews_count": 19,
+            "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Fits Category I & II tractors. Uniform micron-droplet coverage for pest & nutrient foliar spray.",
+            "terms": "Flush tank thoroughly with clean water before return. Full deposit returned upon clean inspection.",
+            "available": True
+        },
+        {
+            "name": "Kubota DC-68G Paddy Combine Harvester",
+            "category": "Harvesters",
+            "brand": "Kubota",
+            "model": "DC-68G Full-Feed Crawler",
+            "year": 2024,
+            "power_hp": "68 HP Turbo Charged",
+            "fuel_type": "Diesel",
+            "capacity_specs": "Rubber Track Crawler for Wet Fields, 2.0m Cutting Width, 1250L Grain Hopper, Hydrostatic HST",
+            "hourly_rate": 2000.0,
+            "daily_rate": 15500.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 350.0,
+            "operator_charge_per_day": 2000.0,
+            "fuel_included_option": True,
+            "fuel_charge_per_hr": 800.0,
+            "fuel_charge_per_day": 6000.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 60.0,
+            "security_deposit": 5000.0,
+            "location": "Amritsar Rural, Punjab",
+            "district": "Amritsar",
+            "state": "Punjab",
+            "distance_km": 14.2,
+            "owner_name": "Golden Temple Agro Custom Centre",
+            "owner_phone": "+91 98150 11223",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.9,
+            "reviews_count": 57,
+            "image_url": "https://images.unsplash.com/photo-1595856754020-f5093122c608?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Special rubber tracks prevent field sinking in flooded paddy soils. Includes auto grain unloader.",
+            "terms": "Driver & mechanical specialist provided. 100% money back if breakdown exceeds 2 hours.",
+            "available": True
+        },
+        {
+            "name": "Sonalika DI 745 III Sikander 50HP Tractor",
+            "category": "Tractors",
+            "brand": "Sonalika",
+            "model": "DI 745 III Sikander HDM",
+            "year": 2023,
+            "power_hp": "50 HP",
+            "fuel_type": "Diesel",
+            "capacity_specs": "50 HP Heavy Duty Mileage Engine, 8F+2R Constant Mesh, 1800 kg Lift, Oil Immersed Brakes",
+            "hourly_rate": 480.0,
+            "daily_rate": 3400.0,
+            "operator_available": True,
+            "operator_charge_per_hr": 140.0,
+            "operator_charge_per_day": 750.0,
+            "fuel_included_option": True,
+            "fuel_charge_per_hr": 240.0,
+            "fuel_charge_per_day": 1350.0,
+            "delivery_available": True,
+            "delivery_rate_per_km": 32.0,
+            "security_deposit": 2000.0,
+            "location": "Muzaffarnagar Sugar Belt, UP",
+            "district": "Muzaffarnagar",
+            "state": "Uttar Pradesh",
+            "distance_km": 7.5,
+            "owner_name": "Kisan Shakti Tractor Pool",
+            "owner_phone": "+91 94122 33445",
+            "owner_badge": "Verified AgriWise Partner",
+            "rating": 4.8,
+            "reviews_count": 45,
+            "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+            "implements_compatibility": "Cultivator 9-Tyne, Rotavator 6ft, Disc Plough, Seed Drill, Heavy 5-Ton Trolley",
+            "terms": "Fuel tank is filled to brim on dispatch. Return clean and fueled or pay fuel differential.",
+            "available": True
+        }
+    ]
+
+    created_items = []
+    for eq in equipment_list:
+        obj = Equipment(**eq)
+        db.add(obj)
+        created_items.append(obj)
+    db.commit()
+
+    # Pre-seed 3 realistic demo bookings for the farmer
+    now = datetime.utcnow()
+    # 1. Upcoming booking tomorrow
+    booking_1 = EquipmentBooking(
+        booking_id="AGRI-EQP-2026-0042",
+        equipment_id=created_items[0].id, # John Deere 5310
+        farmer_id=farmer_id,
+        farmer_name=farmer_name,
+        farmer_phone=farmer_phone,
+        rental_type="HOURLY",
+        start_time=now + timedelta(days=1, hours=3),
+        end_time=now + timedelta(days=1, hours=7),
+        duration_units=4.0,
+        with_operator=True,
+        with_fuel=False,
+        delivery_to_farm=True,
+        delivery_address="Sahnewal Farm 1, Khasra 412, Ludhiana",
+        delivery_distance_km=3.8,
+        base_amount=2200.0,
+        operator_amount=600.0,
+        delivery_amount=133.0,
+        security_deposit=2000.0,
+        gst_amount=146.65,
+        total_amount=5079.65,
+        payment_method="UPI_QR",
+        payment_status="PAID",
+        booking_status="CONFIRMED",
+        notes="Ploughing and rotavator land preparation for Kharif sowing.",
+        created_at=now - timedelta(hours=3)
+    )
+
+    # 2. Active booking ongoing today
+    booking_2 = EquipmentBooking(
+        booking_id="AGRI-EQP-2026-0038",
+        equipment_id=created_items[4].id, # Shaktiman Rotavator
+        farmer_id=farmer_id,
+        farmer_name=farmer_name,
+        farmer_phone=farmer_phone,
+        rental_type="DAILY",
+        start_time=now - timedelta(hours=2),
+        end_time=now + timedelta(hours=8),
+        duration_units=1.0,
+        with_operator=True,
+        with_fuel=False,
+        delivery_to_farm=False,
+        delivery_address="Self-pickup from Sahyadri CHC Yard",
+        delivery_distance_km=0.0,
+        base_amount=2000.0,
+        operator_amount=600.0,
+        delivery_amount=0.0,
+        security_deposit=1500.0,
+        gst_amount=130.0,
+        total_amount=4230.0,
+        payment_method="KCC_RUPAY",
+        payment_status="PAID",
+        booking_status="ACTIVE",
+        notes="Active field tillage. Machine delivered and working smoothly.",
+        created_at=now - timedelta(days=1)
+    )
+
+    # 3. Past completed booking 4 days ago
+    booking_3 = EquipmentBooking(
+        booking_id="AGRI-EQP-2026-0019",
+        equipment_id=created_items[3].id, # Kirloskar Pump
+        farmer_id=farmer_id,
+        farmer_name=farmer_name,
+        farmer_phone=farmer_phone,
+        rental_type="HOURLY",
+        start_time=now - timedelta(days=5, hours=4),
+        end_time=now - timedelta(days=5),
+        duration_units=4.0,
+        with_operator=False,
+        with_fuel=True,
+        delivery_to_farm=True,
+        delivery_address="Sahnewal Farm 1 Tube-well Well-Head 2",
+        delivery_distance_km=2.5,
+        base_amount=600.0,
+        operator_amount=0.0,
+        delivery_amount=50.0,
+        security_deposit=800.0,
+        gst_amount=32.5,
+        total_amount=1482.5,
+        payment_method="UPI_QR",
+        payment_status="PAID",
+        booking_status="COMPLETED",
+        rating=5.0,
+        review_text="Excellent water discharge rate, watered my 3-acre maize field within 4 hours. Prompt delivery and helpful owner!",
+        notes="Completed successfully. Security deposit of ₹800 refunded.",
+        created_at=now - timedelta(days=6)
+    )
+
+    db.add(booking_1)
+    db.add(booking_2)
+    db.add(booking_3)
+    db.commit()
+    print("🚜 Pre-seeded 10 realistic Indian farm equipment and 3 demo bookings.")
 
 if __name__ == "__main__":
     populate_database()

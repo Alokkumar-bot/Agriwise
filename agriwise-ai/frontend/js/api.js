@@ -193,6 +193,43 @@ const AgriAPI = {
 
   releaseEscrow(txId) {
     return this.post('/api/payments/escrow-release', { transaction_id: txId });
+  },
+
+  // Farm Equipment Rental & Custom Hiring Centre (CHC) APIs
+  getEquipment(params = {}) {
+    return this.get('/api/equipment', params);
+  },
+
+  getEquipmentDetails(id) {
+    return this.get(`/api/equipment/${id}`);
+  },
+
+  checkEquipmentAvailability(data) {
+    return this.post('/api/equipment/check-availability', data);
+  },
+
+  bookEquipment(data) {
+    return this.post('/api/equipment/book', data);
+  },
+
+  getMyEquipmentRentals(farmerId) {
+    return this.get('/api/equipment/my-rentals', farmerId ? { farmer_id: farmerId } : {});
+  },
+
+  cancelEquipmentBooking(bookingId, reason) {
+    return this.post('/api/equipment/cancel-booking', { booking_id: bookingId, reason: reason || 'Cancelled by farmer' });
+  },
+
+  listEquipment(data) {
+    return this.post('/api/equipment/list', data);
+  },
+
+  updateEquipmentStatus(id, isAvailable) {
+    return this.patch(`/api/equipment/${id}/status`, { available: isAvailable });
+  },
+
+  getEquipmentReceipt(bookingId) {
+    return this.get(`/api/equipment/booking/${bookingId}/receipt`);
   }
 };
 

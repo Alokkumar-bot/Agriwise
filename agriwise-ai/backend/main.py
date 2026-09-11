@@ -27,7 +27,7 @@ from database import (
     get_db, init_db, User, Farm, SoilProfile, WaterProfile,
     Crop, SeedVariety, FertilizerProduct, Dealer, MarketPrice,
     CropShortage, Buyer, TransportProvider, Order, Notification, ConfigWeights,
-    PaymentTransaction
+    PaymentTransaction, Equipment, EquipmentBooking
 )
 from seed_data import populate_database
 from engines.weather_service import fetch_live_weather
@@ -1320,6 +1320,651 @@ def get_payment_receipt(tx_id: str, db: Session = Depends(get_db)):
     }
 
 # ==========================================
+# 12C. API: Farm Equipment Rental & Custom Hiring Centre (CHC) Engine
+# ==========================================
+
+def get_equipment_live_status(eq: Equipment, db: Session) -> dict:
+    if not eq.available:
+        return {
+            "status": "MAINTENANCE",
+            "badge_class": "badge-red",
+            "badge_text": "Under Maintenance",
+            "available_now": False,
+            "booked_until": None
+        }
+
+    now = datetime.utcnow()
+    active_booking = db.query(EquipmentBooking).filter(
+        EquipmentBooking.equipment_id == eq.id,
+        EquipmentBooking.booking_status.in_(["CONFIRMED", "ACTIVE"]),
+        EquipmentBooking.start_time <= now,
+        EquipmentBooking.end_time >= now
+    ).order_by(EquipmentBooking.end_time.desc()).first()
+
+    if active_booking:
+        return {
+            "status": "BOOKED",
+            "badge_class": "badge-amber",
+            "badge_text": f"Booked until {active_booking.end_time.strftime('%d %b, %I:%M %p')}",
+            "available_now": False,
+            "booked_until": active_booking.end_time.strftime('%Y-%m-%dT%H:%M:%S')
+        }
+
+    return {
+        "status": "AVAILABLE",
+        "badge_class": "badge-emerald",
+        "badge_text": "Available Today",
+        "available_now": True,
+        "booked_until": None
+    }
+
+def serialize_equipment(eq: Equipment, db: Session) -> dict:
+    live = get_equipment_live_status(eq, db)
+    return {
+        "id": eq.id,
+        "owner_id": eq.owner_id,
+        "name": eq.name,
+        "category": eq.category,
+        "brand": eq.brand,
+        "model": eq.model,
+        "year": eq.year,
+        "power_hp": eq.power_hp,
+        "fuel_type": eq.fuel_type,
+        "capacity_specs": eq.capacity_specs,
+        "hourly_rate": eq.hourly_rate,
+        "daily_rate": eq.daily_rate,
+        "operator_available": eq.operator_available,
+        "operator_charge_per_hr": eq.operator_charge_per_hr,
+        "operator_charge_per_day": eq.operator_charge_per_day,
+        "fuel_included_option": eq.fuel_included_option,
+        "fuel_charge_per_hr": eq.fuel_charge_per_hr,
+        "fuel_charge_per_day": eq.fuel_charge_per_day,
+        "delivery_available": eq.delivery_available,
+        "delivery_rate_per_km": eq.delivery_rate_per_km,
+        "security_deposit": eq.security_deposit,
+        "location": eq.location,
+        "district": eq.district,
+        "state": eq.state,
+        "distance_km": eq.distance_km,
+        "owner_name": eq.owner_name,
+        "owner_phone": eq.owner_phone,
+        "owner_badge": eq.owner_badge,
+        "rating": eq.rating,
+        "reviews_count": eq.reviews_count,
+        "image_url": eq.image_url,
+        "implements_compatibility": eq.implements_compatibility,
+        "terms": eq.terms,
+        "available": eq.available,
+        "live_status": live
+    }
+
+@app.get("/api/equipment")
+def get_equipment_catalog(
+    search: Optional[str] = None,
+    category: Optional[str] = None,
+    rental_type: Optional[str] = None,
+    max_price: Optional[float] = None,
+    max_distance: Optional[float] = None,
+    sort_by: Optional[str] = "distance_asc",
+    db: Session = Depends(get_db)
+):
+    query = db.query(Equipment)
+
+    if category and category.upper() != "ALL":
+        cat_clean = category.strip().lower()
+        if "tractor" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Tractor%"))
+        elif "harvest" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Harvest%"))
+        elif "pump" in cat_clean or "water" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Pump%"))
+        elif "rotavat" in cat_clean or "tiller" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Rotavat%"))
+        elif "seed" in cat_clean or "drill" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Seed%"))
+        elif "spray" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Spray%"))
+        elif "thresh" in cat_clean or "cultivat" in cat_clean:
+            query = query.filter(Equipment.category.ilike("%Thresh%"))
+        else:
+            query = query.filter(Equipment.category.ilike(f"%{category}%"))
+
+    if search:
+        s = f"%{search.strip()}%"
+        query = query.filter(
+            (Equipment.name.ilike(s)) |
+            (Equipment.brand.ilike(s)) |
+            (Equipment.model.ilike(s)) |
+            (Equipment.category.ilike(s)) |
+            (Equipment.location.ilike(s)) |
+            (Equipment.capacity_specs.ilike(s))
+        )
+
+    if max_distance:
+        query = query.filter(Equipment.distance_km <= max_distance)
+
+    items = query.all()
+
+    # Price filtering
+    if max_price:
+        if rental_type and rental_type.upper() == "DAILY":
+            items = [item for item in items if item.daily_rate <= max_price]
+        else:
+            items = [item for item in items if item.hourly_rate <= max_price]
+
+    # Sorting
+    if sort_by == "price_asc":
+        if rental_type and rental_type.upper() == "DAILY":
+            items.sort(key=lambda x: x.daily_rate)
+        else:
+            items.sort(key=lambda x: x.hourly_rate)
+    elif sort_by == "price_desc":
+        if rental_type and rental_type.upper() == "DAILY":
+            items.sort(key=lambda x: x.daily_rate, reverse=True)
+        else:
+            items.sort(key=lambda x: x.hourly_rate, reverse=True)
+    elif sort_by == "rating_desc":
+        items.sort(key=lambda x: x.rating, reverse=True)
+    elif sort_by == "distance_asc":
+        items.sort(key=lambda x: x.distance_km)
+
+    return [serialize_equipment(item, db) for item in items]
+
+@app.post("/api/equipment/check-availability")
+def check_equipment_availability(payload: dict = Body(...), db: Session = Depends(get_db)):
+    equipment_id = payload.get("equipment_id")
+    start_str = payload.get("start_time")
+    end_str = payload.get("end_time")
+
+    if not equipment_id or not start_str or not end_str:
+        raise HTTPException(status_code=400, detail="equipment_id, start_time, and end_time are required")
+
+    try:
+        start_dt = datetime.fromisoformat(start_str.replace("Z", ""))
+        end_dt = datetime.fromisoformat(end_str.replace("Z", ""))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid ISO datetime format: {e}")
+
+    if end_dt <= start_dt:
+        raise HTTPException(status_code=400, detail="End time must be strictly after start time")
+
+    eq = db.query(Equipment).filter(Equipment.id == equipment_id).first()
+    if not eq:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+
+    if not eq.available:
+        return {
+            "available": False,
+            "reason": "UNDER_MAINTENANCE",
+            "message": "This equipment is currently under routine maintenance and unavailable for booking.",
+            "conflicts": []
+        }
+
+    conflicts = db.query(EquipmentBooking).filter(
+        EquipmentBooking.equipment_id == equipment_id,
+        EquipmentBooking.booking_status.in_(["CONFIRMED", "ACTIVE"]),
+        EquipmentBooking.start_time < end_dt,
+        EquipmentBooking.end_time > start_dt
+    ).all()
+
+    if conflicts:
+        conflict_details = [
+            {
+                "booking_id": c.booking_id,
+                "start": c.start_time.strftime("%d %b %Y, %I:%M %p"),
+                "end": c.end_time.strftime("%d %b %Y, %I:%M %p")
+            } for c in conflicts
+        ]
+        return {
+            "available": False,
+            "reason": "OVERLAP_CONFLICT",
+            "message": "This machine is already reserved for the selected slot. Please select another time or choose an alternate machine nearby.",
+            "conflicts": conflict_details
+        }
+
+    return {
+        "available": True,
+        "message": "The machine is free and available for booking during the requested time slot.",
+        "equipment_name": eq.name
+    }
+
+@app.post("/api/equipment/book")
+def book_equipment(payload: dict = Body(...), db: Session = Depends(get_db)):
+    equipment_id = payload.get("equipment_id")
+    start_str = payload.get("start_time")
+    end_str = payload.get("end_time")
+    rental_type = (payload.get("rental_type") or "HOURLY").upper()
+
+    if not equipment_id or not start_str or not end_str:
+        raise HTTPException(status_code=400, detail="Missing required booking parameters")
+
+    try:
+        start_dt = datetime.fromisoformat(start_str.replace("Z", ""))
+        end_dt = datetime.fromisoformat(end_str.replace("Z", ""))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid datetime format: {e}")
+
+    if end_dt <= start_dt:
+        raise HTTPException(status_code=400, detail="End time must be after start time")
+
+    eq = db.query(Equipment).filter(Equipment.id == equipment_id).first()
+    if not eq:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+
+    if not eq.available:
+        raise HTTPException(status_code=400, detail="Equipment is currently under maintenance")
+
+    # Overlap conflict prevention
+    conflicts = db.query(EquipmentBooking).filter(
+        EquipmentBooking.equipment_id == equipment_id,
+        EquipmentBooking.booking_status.in_(["CONFIRMED", "ACTIVE"]),
+        EquipmentBooking.start_time < end_dt,
+        EquipmentBooking.end_time > start_dt
+    ).all()
+
+    if conflicts:
+        raise HTTPException(
+            status_code=409,
+            detail="Conflict detected: This machine is already reserved for the selected slot. Please select another time or choose an alternate machine nearby."
+        )
+
+    # Duration & Server-Side Price Calculation
+    diff_seconds = (end_dt - start_dt).total_seconds()
+    if rental_type == "HOURLY":
+        duration_units = max(1.0, round(diff_seconds / 3600.0, 1))
+        unit_rate = eq.hourly_rate
+        op_unit_rate = eq.operator_charge_per_hr if payload.get("with_operator", True) else 0.0
+        fuel_unit_rate = eq.fuel_charge_per_hr if payload.get("with_fuel", False) else 0.0
+    else:
+        duration_units = max(1.0, round(diff_seconds / 86400.0, 1))
+        unit_rate = eq.daily_rate
+        op_unit_rate = eq.operator_charge_per_day if payload.get("with_operator", True) else 0.0
+        fuel_unit_rate = eq.fuel_charge_per_day if payload.get("with_fuel", False) else 0.0
+
+    base_amount = round(unit_rate * duration_units, 2)
+    operator_amount = round(op_unit_rate * duration_units, 2)
+    fuel_amount = round(fuel_unit_rate * duration_units, 2)
+
+    delivery_to_farm = bool(payload.get("delivery_to_farm", False))
+    delivery_dist = float(payload.get("delivery_distance_km") or eq.distance_km or 4.0) if delivery_to_farm else 0.0
+    delivery_amount = round(delivery_dist * eq.delivery_rate_per_km, 2) if delivery_to_farm else 0.0
+
+    subtotal = base_amount + operator_amount + fuel_amount + delivery_amount
+    gst_amount = round(subtotal * 0.05, 2) # Standard 5% GST
+    security_deposit = float(eq.security_deposit)
+    total_amount = round(subtotal + gst_amount + security_deposit, 2)
+
+    farmer_id = payload.get("farmer_id") or 1
+    farmer_user = db.query(User).filter(User.id == farmer_id).first()
+    farmer_name = payload.get("farmer_name") or (farmer_user.name if farmer_user else "Sardar Gurpreet Singh")
+    farmer_phone = payload.get("farmer_phone") or (farmer_user.phone if farmer_user else "+91 98765 43210")
+    payment_method = (payload.get("payment_method") or "UPI_QR").upper()
+
+    rnd_num = random.randint(1000, 9999)
+    booking_id = f"AGRI-EQP-2026-{rnd_num}"
+    tx_id = f"AGRI-PAY-2026-{rnd_num}"
+    utr_num = f"6291{random.randint(10000000, 99999999)}"
+
+    if payment_method == "PAY_ON_DELIVERY":
+        payment_status = "PENDING"
+        tx_status = "INITIATED"
+    else:
+        payment_status = "PAID"
+        tx_status = "SUCCESS"
+
+    payment_tx = PaymentTransaction(
+        transaction_id=tx_id,
+        utr_number=utr_num,
+        user_id=farmer_id,
+        payment_type="EQUIPMENT_RENTAL",
+        payment_method=payment_method,
+        amount_inr=subtotal,
+        gst_amount_inr=gst_amount,
+        subsidy_amount_inr=0.0,
+        net_amount_inr=total_amount,
+        payer_name=farmer_name,
+        payee_name=eq.owner_name,
+        bank_name_or_vpa=payload.get("bank_name_or_vpa", "SBI / NPCI UPI Switch"),
+        status=tx_status,
+        notes=f"Farm Equipment Rental: {eq.name} ({duration_units} {'Hours' if rental_type == 'HOURLY' else 'Days'}). Deposit: ₹{security_deposit:,.0f} (Refundable).",
+        created_at=datetime.utcnow(),
+        completed_at=datetime.utcnow() if tx_status == "SUCCESS" else None
+    )
+    db.add(payment_tx)
+
+    booking = EquipmentBooking(
+        booking_id=booking_id,
+        equipment_id=eq.id,
+        farmer_id=farmer_id,
+        farmer_name=farmer_name,
+        farmer_phone=farmer_phone,
+        rental_type=rental_type,
+        start_time=start_dt,
+        end_time=end_dt,
+        duration_units=duration_units,
+        with_operator=bool(payload.get("with_operator", True)),
+        with_fuel=bool(payload.get("with_fuel", False)),
+        delivery_to_farm=delivery_to_farm,
+        delivery_address=payload.get("delivery_address", f"{eq.location} Farm Gate"),
+        delivery_distance_km=delivery_dist,
+        base_amount=base_amount,
+        operator_amount=operator_amount,
+        delivery_amount=delivery_amount,
+        security_deposit=security_deposit,
+        gst_amount=gst_amount,
+        total_amount=total_amount,
+        payment_method=payment_method,
+        payment_status=payment_status,
+        booking_status="CONFIRMED",
+        notes=payload.get("notes", ""),
+        created_at=datetime.utcnow()
+    )
+    db.add(booking)
+
+    notif = Notification(
+        title=f"🚜 Equipment Booked: {eq.name}",
+        message=f"Booking {booking_id} confirmed for {start_dt.strftime('%d %b, %I:%M %p')} to {end_dt.strftime('%d %b, %I:%M %p')}. Total: ₹{total_amount:,.2f}. Owner: {eq.owner_name} ({eq.owner_phone}).",
+        category="ORDER",
+        severity="SUCCESS"
+    )
+    db.add(notif)
+    db.commit()
+
+    return {
+        "success": True,
+        "booking_id": booking_id,
+        "transaction_id": tx_id,
+        "utr_number": utr_num,
+        "equipment_name": eq.name,
+        "owner_name": eq.owner_name,
+        "owner_phone": eq.owner_phone,
+        "rental_type": rental_type,
+        "start_time": start_dt.strftime("%d %b %Y, %I:%M %p"),
+        "end_time": end_dt.strftime("%d %b %Y, %I:%M %p"),
+        "duration_units": duration_units,
+        "base_amount": base_amount,
+        "operator_amount": operator_amount,
+        "delivery_amount": delivery_amount,
+        "security_deposit": security_deposit,
+        "gst_amount": gst_amount,
+        "total_amount": total_amount,
+        "payment_method": payment_method,
+        "payment_status": payment_status,
+        "booking_status": "CONFIRMED",
+        "receipt_url": f"/api/equipment/booking/{booking_id}/receipt",
+        "message": f"Equipment {eq.name} successfully booked under {booking_id}!"
+    }
+
+@app.get("/api/equipment/my-rentals")
+def get_my_equipment_rentals(farmer_id: Optional[int] = None, db: Session = Depends(get_db)):
+    target_id = farmer_id or 1
+    now = datetime.utcnow()
+
+    bookings = db.query(EquipmentBooking).filter(
+        (EquipmentBooking.farmer_id == target_id) | (EquipmentBooking.farmer_id == None)
+    ).order_by(EquipmentBooking.start_time.desc()).all()
+
+    upcoming = []
+    active = []
+    completed = []
+    cancelled = []
+
+    for b in bookings:
+        eq = b.equipment
+        data = {
+            "id": b.id,
+            "booking_id": b.booking_id,
+            "equipment_id": b.equipment_id,
+            "equipment_name": eq.name if eq else "Agricultural Implement",
+            "equipment_category": eq.category if eq else "Equipment",
+            "equipment_image": eq.image_url if eq else "",
+            "owner_name": eq.owner_name if eq else "Partner CHC",
+            "owner_phone": eq.owner_phone if eq else "+91 98765 43210",
+            "rental_type": b.rental_type,
+            "start_time": b.start_time.strftime("%d %b %Y, %I:%M %p"),
+            "end_time": b.end_time.strftime("%d %b %Y, %I:%M %p"),
+            "start_iso": b.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "end_iso": b.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "duration_units": b.duration_units,
+            "with_operator": b.with_operator,
+            "with_fuel": b.with_fuel,
+            "delivery_to_farm": b.delivery_to_farm,
+            "delivery_address": b.delivery_address,
+            "base_amount": b.base_amount,
+            "operator_amount": b.operator_amount,
+            "delivery_amount": b.delivery_amount,
+            "security_deposit": b.security_deposit,
+            "gst_amount": b.gst_amount,
+            "total_amount": b.total_amount,
+            "payment_method": b.payment_method,
+            "payment_status": b.payment_status,
+            "booking_status": b.booking_status,
+            "cancellation_reason": b.cancellation_reason,
+            "refund_amount": b.refund_amount,
+            "rating": b.rating,
+            "review_text": b.review_text,
+            "can_cancel": (b.booking_status == "CONFIRMED" and b.start_time > now),
+            "created_at": b.created_at.strftime("%d %b %Y, %I:%M %p") if b.created_at else ""
+        }
+
+        if b.booking_status == "CANCELLED":
+            cancelled.append(data)
+        elif b.booking_status == "ACTIVE" or (b.booking_status == "CONFIRMED" and b.start_time <= now <= b.end_time):
+            data["booking_status"] = "ACTIVE"
+            active.append(data)
+        elif b.booking_status == "CONFIRMED" and b.start_time > now:
+            upcoming.append(data)
+        else:
+            data["booking_status"] = "COMPLETED"
+            completed.append(data)
+
+    return {
+        "upcoming": upcoming,
+        "active": active,
+        "completed": completed,
+        "cancelled": cancelled,
+        "total_count": len(bookings)
+    }
+
+@app.post("/api/equipment/cancel-booking")
+def cancel_equipment_booking(payload: dict = Body(...), db: Session = Depends(get_db)):
+    booking_id = payload.get("booking_id")
+    reason = payload.get("reason", "Changed field preparation plans")
+
+    if not booking_id:
+        raise HTTPException(status_code=400, detail="booking_id is required")
+
+    booking = db.query(EquipmentBooking).filter(EquipmentBooking.booking_id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if booking.booking_status == "CANCELLED":
+        raise HTTPException(status_code=400, detail="Booking is already cancelled")
+
+    now = datetime.utcnow()
+    hours_to_start = (booking.start_time - now).total_seconds() / 3600.0
+
+    if hours_to_start >= 6.0:
+        refund_amount = booking.total_amount
+        policy_note = "Full 100% refund approved (cancelled > 6 hours before start)"
+    elif hours_to_start > 0:
+        refund_amount = round(booking.security_deposit + (booking.base_amount * 0.5), 2)
+        policy_note = "Late cancellation (< 6 hours before start). Full security deposit + 50% base rental refunded."
+    else:
+        refund_amount = round(booking.security_deposit, 2)
+        policy_note = "Booking already started. Security deposit refunded."
+
+    booking.booking_status = "CANCELLED"
+    booking.cancellation_reason = f"{reason} ({policy_note})"
+    booking.refund_amount = refund_amount
+    booking.payment_status = "REFUNDED"
+
+    notif = Notification(
+        title=f"🛑 Rental Cancelled: {booking.booking_id}",
+        message=f"Booking {booking.booking_id} cancelled. Refund of ₹{refund_amount:,.2f} initiated to original payment method. {policy_note}",
+        category="ORDER",
+        severity="WARNING"
+    )
+    db.add(notif)
+    db.commit()
+
+    return {
+        "success": True,
+        "booking_id": booking.booking_id,
+        "refund_amount": refund_amount,
+        "policy_note": policy_note,
+        "status": "CANCELLED",
+        "message": f"Booking cancelled successfully. ₹{refund_amount:,.2f} refunded."
+    }
+
+@app.post("/api/equipment/list")
+def list_new_equipment(payload: dict = Body(...), db: Session = Depends(get_db)):
+    name = payload.get("name")
+    category = payload.get("category", "Tractors")
+    hourly_rate = float(payload.get("hourly_rate", 500.0))
+    daily_rate = float(payload.get("daily_rate", 3500.0))
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Equipment name is required")
+
+    new_eq = Equipment(
+        name=name,
+        category=category,
+        brand=payload.get("brand", "Mahindra"),
+        model=payload.get("model", "2024 Edition"),
+        year=int(payload.get("year", 2024)),
+        power_hp=payload.get("power_hp", "50 HP"),
+        fuel_type=payload.get("fuel_type", "Diesel"),
+        capacity_specs=payload.get("capacity_specs", "High performance agricultural implement"),
+        hourly_rate=hourly_rate,
+        daily_rate=daily_rate,
+        operator_available=bool(payload.get("operator_available", True)),
+        operator_charge_per_hr=float(payload.get("operator_charge_per_hr", 150.0)),
+        operator_charge_per_day=float(payload.get("operator_charge_per_day", 800.0)),
+        fuel_included_option=bool(payload.get("fuel_included_option", True)),
+        fuel_charge_per_hr=float(payload.get("fuel_charge_per_hr", 250.0)),
+        fuel_charge_per_day=float(payload.get("fuel_charge_per_day", 1400.0)),
+        delivery_available=bool(payload.get("delivery_available", True)),
+        delivery_rate_per_km=float(payload.get("delivery_rate_per_km", 35.0)),
+        security_deposit=float(payload.get("security_deposit", 2000.0)),
+        location=payload.get("location", "Ludhiana, Punjab"),
+        district=payload.get("district", "Ludhiana"),
+        state=payload.get("state", "Punjab"),
+        distance_km=float(payload.get("distance_km", 5.0)),
+        owner_name=payload.get("owner_name", "Kisan Sahayata CHC"),
+        owner_phone=payload.get("owner_phone", "+91 98765 12345"),
+        owner_badge="AgriWise Partner",
+        rating=5.0,
+        reviews_count=1,
+        image_url=payload.get("image_url") or "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80",
+        implements_compatibility=payload.get("implements_compatibility", "Standard 3-point linkage"),
+        terms=payload.get("terms", "Valid ID required. Full refund if cancelled > 6 hrs prior."),
+        available=True
+    )
+    db.add(new_eq)
+    db.commit()
+
+    return {
+        "success": True,
+        "equipment": serialize_equipment(new_eq, db),
+        "message": f"Successfully listed {name} on AgriWise Farm Equipment Marketplace!"
+    }
+
+@app.patch("/api/equipment/{equipment_id}/status")
+def update_equipment_status(equipment_id: int, payload: dict = Body(...), db: Session = Depends(get_db)):
+    eq = db.query(Equipment).filter(Equipment.id == equipment_id).first()
+    if not eq:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+
+    if "available" in payload:
+        eq.available = bool(payload["available"])
+    db.commit()
+
+    return {
+        "success": True,
+        "id": eq.id,
+        "available": eq.available,
+        "message": f"Equipment availability updated to {'Available' if eq.available else 'Under Maintenance'}"
+    }
+
+@app.get("/api/equipment/booking/{booking_id}/receipt")
+def get_equipment_booking_receipt(booking_id: str, db: Session = Depends(get_db)):
+    booking = db.query(EquipmentBooking).filter(EquipmentBooking.booking_id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    eq = booking.equipment
+    return {
+        "receipt_number": f"AGRI-EQP-REC-{booking.id:05d}",
+        "booking_id": booking.booking_id,
+        "created_at": booking.created_at.strftime("%d %b %Y, %I:%M %p") if booking.created_at else "",
+        "rental_period": f"{booking.start_time.strftime('%d %b %Y, %I:%M %p')} to {booking.end_time.strftime('%d %b %Y, %I:%M %p')}",
+        "duration": f"{booking.duration_units} {'Hours' if booking.rental_type == 'HOURLY' else 'Days'}",
+        "equipment": {
+            "name": eq.name if eq else "Farm Implement",
+            "category": eq.category if eq else "Equipment",
+            "model": eq.model if eq else "",
+            "power": eq.power_hp if eq else "",
+            "location": eq.location if eq else ""
+        },
+        "farmer": {
+            "name": booking.farmer_name,
+            "phone": booking.farmer_phone,
+            "delivery_address": booking.delivery_address if booking.delivery_to_farm else "Self-pickup from Owner Yard"
+        },
+        "owner": {
+            "name": eq.owner_name if eq else "Partner CHC",
+            "phone": eq.owner_phone if eq else "+91 98765 12345",
+            "badge": eq.owner_badge if eq else "Verified Partner"
+        },
+        "financials": {
+            "base_rental": booking.base_amount,
+            "operator_charges": booking.operator_amount,
+            "delivery_charges": booking.delivery_amount,
+            "security_deposit_refundable": booking.security_deposit,
+            "gst_5_pct": booking.gst_amount,
+            "total_paid": booking.total_amount,
+            "payment_method": booking.payment_method,
+            "payment_status": booking.payment_status,
+            "booking_status": booking.booking_status
+        },
+        "terms_and_conditions": [
+            "Refundable Security Deposit is returned within 2 hours of equipment return and physical inspection.",
+            "Free cancellation with 100% refund if cancelled at least 6 hours before rental start time.",
+            "Operator adheres to standard agricultural safety norms. Farmer must ensure field accessibility.",
+            "DBT & APMC Custom Hiring Centre (CHC) compliance certified under Sub-Mission on Agricultural Mechanization (SMAM)."
+        ]
+    }
+
+@app.get("/api/equipment/{equipment_id}")
+def get_equipment_details(equipment_id: int, db: Session = Depends(get_db)):
+    eq = db.query(Equipment).filter(Equipment.id == equipment_id).first()
+    if not eq:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+
+    now = datetime.utcnow()
+    future_bookings = db.query(EquipmentBooking).filter(
+        EquipmentBooking.equipment_id == equipment_id,
+        EquipmentBooking.booking_status.in_(["CONFIRMED", "ACTIVE"]),
+        EquipmentBooking.end_time > now
+    ).order_by(EquipmentBooking.start_time.asc()).all()
+
+    booked_slots = [
+        {
+            "booking_id": b.booking_id,
+            "start_time": b.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "end_time": b.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "formatted_start": b.start_time.strftime("%d %b %Y, %I:%M %p"),
+            "formatted_end": b.end_time.strftime("%d %b %Y, %I:%M %p"),
+            "rental_type": b.rental_type
+        } for b in future_bookings
+    ]
+
+    data = serialize_equipment(eq, db)
+    data["upcoming_booked_slots"] = booked_slots
+    return data
+
+# ==========================================
 # 13. Static Files & Clean Dedicated Page Routing
 # ==========================================
 # Mount CSS, JS, Locales
@@ -1351,6 +1996,7 @@ ROUTE_PAGE_MAP = {
     "profit-estimator": "pages/profit-estimator.html",
     "buyer-marketplace": "pages/buyer-marketplace.html",
     "transport-marketplace": "pages/transport-marketplace.html",
+    "farm-equipment": "pages/farm-equipment.html",
     "farm-to-market": "pages/farm-to-market.html",
     "farmer-orders": "pages/farmer-orders.html",
     "payment": "pages/payment.html",

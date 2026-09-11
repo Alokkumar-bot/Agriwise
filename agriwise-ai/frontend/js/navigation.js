@@ -81,8 +81,9 @@ const AgriNav = {
       <a href="/dashboard" class="nav-link" data-route="dashboard">🌾 Dashboard</a>
       <a href="/crop-recommendation" class="nav-link" data-route="crop-recommendation">🌱 Crops</a>
       <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Inputs</a>
-      <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">🚜 Services</a>
       <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Markets</a>
+      <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">🚚 Services</a>
+      <a href="/farm-equipment" class="nav-link" data-route="farm-equipment">🚜 Farm Equipment</a>
       <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Orders</a>
       <a href="/ai-assistant" class="nav-link" data-route="ai-assistant">🤖 AI Advisor</a>
     `;
@@ -243,7 +244,10 @@ const AgriNav = {
             <span>🛒</span> <span>Inputs & Fertilizer Market</span>
           </a>
           <a href="/transport-marketplace" class="mobile-drawer-link" data-route="transport-marketplace">
-            <span>🚜</span> <span>Services & Machinery Fleet</span>
+            <span>🚚</span> <span>Services & Mandi Logistics</span>
+          </a>
+          <a href="/farm-equipment" class="mobile-drawer-link" data-route="farm-equipment">
+            <span>🚜</span> <span>Farm Equipment Rental</span>
           </a>
           <a href="/market-intelligence" class="mobile-drawer-link" data-route="market-intelligence">
             <span>💹</span> <span>Market & Live Mandi Prices</span>
@@ -457,6 +461,10 @@ const AgriNav = {
           <span class="mobile-nav-icon">🛒</span>
           <span>Inputs</span>
         </a>
+        <a href="/farm-equipment" class="mobile-nav-item" data-route="farm-equipment">
+          <span class="mobile-nav-icon">🚜</span>
+          <span>Rentals</span>
+        </a>
         <a href="/farmer-orders" class="mobile-nav-item" data-route="farmer-orders">
           <span class="mobile-nav-icon">📦</span>
           <span>Orders</span>
@@ -505,6 +513,7 @@ const AgriNav = {
               <h5>Market & Logistics</h5>
               <ul>
                 <li><a href="/fertilizer-market">Nearby Input Dealers</a></li>
+                <li><a href="/farm-equipment">Farm Equipment & Tractor Rental</a></li>
                 <li><a href="/payment">Agri Payment Gateway & Escrow</a></li>
                 <li><a href="/market-intelligence">Bloomberg Mandi Dashboard</a></li>
                 <li><a href="/crop-shortage">National Deficit & Shortage Map</a></li>

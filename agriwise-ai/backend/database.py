@@ -285,6 +285,81 @@ class ConfigWeights(Base):
     economics_weight = Column(Float, default=0.10)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
+class Equipment(Base):
+    __tablename__ = "equipment"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    name = Column(String, nullable=False) # e.g. "John Deere 5310 55HP Tractor"
+    category = Column(String, nullable=False, default="Tractors") # Tractors, Harvesters, Water Pumps, Rotavators, Seed Drills, Sprayers, Threshers
+    brand = Column(String, default="John Deere")
+    model = Column(String, default="5310 4WD")
+    year = Column(Integer, default=2024)
+    power_hp = Column(String, default="55 HP")
+    fuel_type = Column(String, default="Diesel")
+    capacity_specs = Column(String, default="55 HP, 4WD, Dual Clutch, High Lift Hydraulic")
+    hourly_rate = Column(Float, default=550.0)
+    daily_rate = Column(Float, default=3800.0)
+    operator_available = Column(Boolean, default=True)
+    operator_charge_per_hr = Column(Float, default=150.0)
+    operator_charge_per_day = Column(Float, default=800.0)
+    fuel_included_option = Column(Boolean, default=True)
+    fuel_charge_per_hr = Column(Float, default=250.0)
+    fuel_charge_per_day = Column(Float, default=1400.0)
+    delivery_available = Column(Boolean, default=True)
+    delivery_rate_per_km = Column(Float, default=35.0)
+    security_deposit = Column(Float, default=2000.0)
+    location = Column(String, default="Karnal, Haryana")
+    district = Column(String, default="Karnal")
+    state = Column(String, default="Haryana")
+    distance_km = Column(Float, default=4.2)
+    owner_name = Column(String, default="Kisan Samriddhi CHC Hub")
+    owner_phone = Column(String, default="+91 98765 12345")
+    owner_badge = Column(String, default="Verified AgriWise Partner")
+    rating = Column(Float, default=4.8)
+    reviews_count = Column(Integer, default=34)
+    image_url = Column(String, default="")
+    implements_compatibility = Column(Text, default="MB Plough, Disc Harrow, Rotavator 7ft, Seed Drill, Trolley 5-Tonne")
+    terms = Column(Text, default="Valid Govt ID (Aadhaar/DL) required at handover. Full refund on cancellation > 6 hours prior to scheduled start. Return with same fuel level if fuel-excluded plan.")
+    available = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    bookings = relationship("EquipmentBooking", back_populates="equipment")
+
+class EquipmentBooking(Base):
+    __tablename__ = "equipment_bookings"
+    id = Column(Integer, primary_key=True, index=True)
+    booking_id = Column(String, unique=True, index=True) # e.g. AGRI-EQP-2026-0042
+    equipment_id = Column(Integer, ForeignKey("equipment.id"))
+    farmer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    farmer_name = Column(String, default="Sardar Gurpreet Singh")
+    farmer_phone = Column(String, default="+91 98765 43210")
+    rental_type = Column(String, default="HOURLY") # HOURLY, DAILY
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    duration_units = Column(Float, default=4.0) # hours or days
+    with_operator = Column(Boolean, default=True)
+    with_fuel = Column(Boolean, default=False)
+    delivery_to_farm = Column(Boolean, default=False)
+    delivery_address = Column(String, default="")
+    delivery_distance_km = Column(Float, default=0.0)
+    base_amount = Column(Float, default=0.0)
+    operator_amount = Column(Float, default=0.0)
+    delivery_amount = Column(Float, default=0.0)
+    security_deposit = Column(Float, default=0.0)
+    gst_amount = Column(Float, default=0.0)
+    total_amount = Column(Float, default=0.0)
+    payment_method = Column(String, default="UPI_QR") # UPI_QR, KCC_RUPAY, NET_BANKING, PAY_ON_DELIVERY
+    payment_status = Column(String, default="PAID") # PENDING, PAID, REFUNDED
+    booking_status = Column(String, default="CONFIRMED") # CONFIRMED, ACTIVE, COMPLETED, CANCELLED
+    cancellation_reason = Column(String, default="")
+    refund_amount = Column(Float, default=0.0)
+    rating = Column(Float, nullable=True)
+    review_text = Column(Text, default="")
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    equipment = relationship("Equipment", back_populates="bookings")
+
 def init_db():
     """Initializes the database schema."""
     Base.metadata.create_all(bind=engine)
