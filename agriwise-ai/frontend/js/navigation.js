@@ -132,12 +132,102 @@ const AgriNav = {
               🔔
               <span class="notif-badge-count">3</span>
             </a>
+
+            <!-- User Authentication Status & Profile Dropdown -->
+            ${this.renderUserAuthNav()}
           </div>
         </div>
       </header>
     `;
 
     document.querySelector('.demo-journey-banner').insertAdjacentHTML('afterend', headerHtml);
+    this.setupDropdownListeners();
+  },
+
+  renderUserAuthNav() {
+    const currentRole = window.AgriState.currentRole || 'FARMER';
+    const isAuth = window.AgriState.isAuthenticated();
+    const user = window.AgriState.currentUser || {
+      name: currentRole === 'FARMER' ? 'Gurpreet Singh' :
+            currentRole === 'DEALER' ? 'Rajinder Kumar' :
+            currentRole === 'TRANSPORTER' ? 'Balwinder Singh' :
+            currentRole === 'BUYER' ? 'ABC Agro Foods' : 'Administrator',
+      role: currentRole
+    };
+
+    const roleEmoji = currentRole === 'FARMER' ? '👨‍🌾' :
+                      currentRole === 'DEALER' ? '🏪' :
+                      currentRole === 'TRANSPORTER' ? '🚛' :
+                      currentRole === 'BUYER' ? '🏢' : '⚙️';
+
+    const roleDashboardUrl = currentRole === 'DEALER' ? '/dealer-dashboard' :
+                            currentRole === 'TRANSPORTER' ? '/transport-dashboard' :
+                            currentRole === 'BUYER' ? '/buyer-dashboard' :
+                            currentRole === 'ADMIN' ? '/admin' : '/dashboard';
+
+    if (isAuth) {
+      return `
+        <div class="user-nav-dropdown">
+          <button type="button" class="user-nav-btn" onclick="AgriNav.toggleUserDropdown(event)" title="My Account Profile">
+            <span>${roleEmoji}</span>
+            <span style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${user.name.split(' ')[0]}</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">▼</span>
+          </button>
+          <div id="userNavMenu" class="user-menu-dropdown">
+            <div class="user-menu-header">
+              <div class="user-menu-name">${user.name}</div>
+              <div class="user-menu-meta">${roleEmoji} ${currentRole} • Punjab</div>
+            </div>
+            <a href="${roleDashboardUrl}" class="user-menu-item">
+              <span>📊</span>
+              <span>My Role Dashboard</span>
+            </a>
+            <a href="/farm-profile" class="user-menu-item">
+              <span>🌾</span>
+              <span>Farm Profile & Land</span>
+            </a>
+            <a href="/farmer-orders" class="user-menu-item">
+              <span>📦</span>
+              <span>Orders & Contracts</span>
+            </a>
+            <a href="/payment" class="user-menu-item">
+              <span>💳</span>
+              <span>KCC & Escrow Wallet</span>
+            </a>
+            <div class="user-menu-divider"></div>
+            <a href="/login" class="user-menu-item" style="color: var(--primary-700);">
+              <span>🔄</span>
+              <span>Switch Account</span>
+            </a>
+            <button type="button" onclick="AgriState.logout()" class="user-menu-item" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; color: #dc2626;">
+              <span>🚪</span>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <a href="/login" class="btn btn-outline-primary btn-sm" style="font-weight: 700; white-space: nowrap;">
+          <span>🔐 Sign In</span>
+        </a>
+      `;
+    }
+  },
+
+  toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('userNavMenu');
+    if (menu) menu.classList.toggle('show');
+  },
+
+  setupDropdownListeners() {
+    document.addEventListener('click', () => {
+      const menu = document.getElementById('userNavMenu');
+      if (menu && menu.classList.contains('show')) {
+        menu.classList.remove('show');
+      }
+    });
   },
 
   renderMobileBottomNav() {

@@ -43,6 +43,27 @@ const AgriAPI = {
     }
   },
 
+  // Authentication API
+  login(credentials) {
+    return this.post('/api/auth/login', credentials);
+  },
+
+  sendOtp(phone, role = 'FARMER') {
+    return this.post('/api/auth/send-otp', { phone, role });
+  },
+
+  verifyOtp(phone, otp, role = 'FARMER') {
+    return this.post('/api/auth/verify-otp', { phone, otp, role });
+  },
+
+  logout() {
+    return this.post('/api/auth/logout', {});
+  },
+
+  getCurrentUser(role) {
+    return this.get('/api/auth/me', role ? { role } : {});
+  },
+
   // Specific API calls
   getLiveWeather(lat, lon, locName) {
     return this.get('/api/weather', { lat, lon, location: locName });

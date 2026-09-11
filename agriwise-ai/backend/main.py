@@ -73,63 +73,183 @@ def health_check():
         "environment": "Production-Ready Demo"
     }
 
-# ==========================================
-# 2. API: Authentication & Roles
-# ==========================================
+# In-memory OTP storage with expiration
+OTP_CACHE: Dict[str, Dict[str, Any]] = {}
+
+def get_dashboard_redirect(role: str) -> str:
+    role = (role or "FARMER").upper()
+    if role == "DEALER":
+        return "/dealer-dashboard"
+    elif role == "TRANSPORTER":
+        return "/transport-dashboard"
+    elif role == "BUYER":
+        return "/buyer-dashboard"
+    elif role == "ADMIN":
+        return "/admin"
+    return "/dashboard"
+
 @app.get("/api/auth/me")
 def get_current_user(role: Optional[str] = None, db: Session = Depends(get_db)):
     target_role = role.upper() if role else "FARMER"
     user = db.query(User).filter(User.role == target_role).first()
     if not user:
         user = db.query(User).first()
+
+    farm = user.farms[0] if user and user.farms else None
     return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "phone": user.phone,
-        "role": user.role,
-        "state": user.state,
-        "district": user.district,
-        "village": user.village,
-        "farm_size_acres": user.farm_size_acres,
-        "experience_years": user.experience_years
+        "id": user.id if user else 1,
+        "name": user.name if user else "Gurpreet Singh",
+        "email": user.email if user else "gurpreet.farmer@agriwise.ai",
+        "phone": user.phone if user else "+91 98765 43210",
+        "role": user.role if user else "FARMER",
+        "state": user.state if user else "Punjab",
+        "district": user.district if user else "Ludhiana",
+        "village": user.village if user else "Sahnewal",
+        "farm_size_acres": user.farm_size_acres if user else 5.0,
+        "experience_years": user.experience_years if user else 14,
+        "active_farm": {
+            "id": farm.id if farm else 1,
+            "name": farm.name if farm else "Sahnewal Golden Acre Farm",
+            "current_crop": farm.current_crop if farm else "Maize",
+            "current_season": farm.current_season if farm else "Kharif",
+            "area_acres": farm.area_acres if farm else 5.0
+        } if farm else None
     }
 
 @app.post("/api/auth/login")
 def login(payload: dict = Body(...), db: Session = Depends(get_db)):
-    email_or_role = payload.get("email", "").strip().upper()
-    role = payload.get("role", "FARMER").upper()
+    identifier = (payload.get("identifier") or payload.get("email") or payload.get("phone") or "").strip()
+    password = (payload.get("password") or "").strip()
+    requested_role = (payload.get("role") or "").strip().upper()
 
     user = None
-    if "DEALER" in email_or_role or role == "DEALER":
-        user = db.query(User).filter(User.role == "DEALER").first()
-    elif "TRANSPORT" in email_or_role or role == "TRANSPORTER":
-        user = db.query(User).filter(User.role == "TRANSPORTER").first()
-    elif "BUYER" in email_or_role or role == "BUYER":
-        user = db.query(User).filter(User.role == "BUYER").first()
-    elif "ADMIN" in email_or_role or role == "ADMIN":
-        user = db.query(User).filter(User.role == "ADMIN").first()
-    else:
-        user = db.query(User).filter(User.role == "FARMER").first()
+    # 1. Search by email or phone match
+    if identifier:
+        user = db.query(User).filter(
+            (User.email.ilike(identifier)) | (User.phone.contains(identifier))
+        ).first()
+
+    # 2. Search by role if requested
+    if not user and requested_role in ["FARMER", "DEALER", "TRANSPORTER", "BUYER", "ADMIN"]:
+        user = db.query(User).filter(User.role == requested_role).first()
+
+    # 3. Check identifier matching role name
+    if not user and identifier.upper() in ["FARMER", "DEALER", "TRANSPORTER", "BUYER", "ADMIN"]:
+        user = db.query(User).filter(User.role == identifier.upper()).first()
+
+    # 4. Fallback to default user
+    if not user:
+        user = db.query(User).first()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="No matching user account found. Please register.")
+
+    redirect_url = get_dashboard_redirect(user.role)
+    token = f"agriwise_tok_{user.role.lower()}_{user.id}_{int(datetime.utcnow().timestamp())}"
 
     return {
         "success": True,
-        "token": "agriwise_secure_jwt_demo_token",
+        "message": f"Welcome back, {user.name}!",
+        "token": token,
+        "redirect_url": redirect_url,
         "user": {
             "id": user.id,
             "name": user.name,
             "email": user.email,
+            "phone": user.phone,
             "role": user.role,
             "state": user.state,
-            "district": user.district
+            "district": user.district,
+            "village": user.village,
+            "farm_size_acres": user.farm_size_acres
         }
+    }
+
+@app.post("/api/auth/send-otp")
+def send_otp(payload: dict = Body(...), db: Session = Depends(get_db)):
+    phone = (payload.get("phone") or "").strip()
+    role = (payload.get("role") or "FARMER").strip().upper()
+    
+    clean_digits = "".join(filter(str.isdigit, phone))
+    if len(clean_digits) < 6:
+        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit Indian mobile number.")
+
+    generated_otp = f"{random.randint(100000, 999999)}"
+    OTP_CACHE[clean_digits] = {
+        "otp": generated_otp,
+        "role": role,
+        "expires_at": datetime.utcnow() + timedelta(minutes=5)
+    }
+
+    return {
+        "success": True,
+        "message": f"6-digit Kisan Verification OTP dispatched to {phone}",
+        "otp": generated_otp,
+        "expires_in_seconds": 300,
+        "role": role
+    }
+
+@app.post("/api/auth/verify-otp")
+def verify_otp(payload: dict = Body(...), db: Session = Depends(get_db)):
+    phone = (payload.get("phone") or "").strip()
+    otp = (payload.get("otp") or "").strip()
+    role = (payload.get("role") or "FARMER").strip().upper()
+
+    clean_digits = "".join(filter(str.isdigit, phone))
+    cached = OTP_CACHE.get(clean_digits)
+
+    # Accept generated OTP, or master demo codes (123456 / 1234)
+    is_valid = False
+    if otp in ["123456", "1234"]:
+        is_valid = True
+    elif cached and cached.get("otp") == otp:
+        if cached.get("expires_at") >= datetime.utcnow():
+            is_valid = True
+            role = cached.get("role", role)
+        else:
+            raise HTTPException(status_code=400, detail="OTP has expired. Please request a new code.")
+
+    if not is_valid:
+        raise HTTPException(status_code=400, detail="Invalid OTP code. Please check SMS or use demo code 123456.")
+
+    # Match user by phone or role
+    user = db.query(User).filter(User.role == role).first()
+    if not user:
+        user = db.query(User).first()
+
+    redirect_url = get_dashboard_redirect(user.role)
+    token = f"agriwise_otp_tok_{user.role.lower()}_{user.id}_{int(datetime.utcnow().timestamp())}"
+
+    return {
+        "success": True,
+        "message": f"Phone verified! Welcome back, {user.name}.",
+        "token": token,
+        "redirect_url": redirect_url,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "role": user.role,
+            "state": user.state,
+            "district": user.district,
+            "village": user.village,
+            "farm_size_acres": user.farm_size_acres
+        }
+    }
+
+@app.post("/api/auth/logout")
+def logout():
+    return {
+        "success": True,
+        "message": "User session cleared successfully"
     }
 
 @app.post("/api/auth/register")
 def register(payload: dict = Body(...), db: Session = Depends(get_db)):
     new_user = User(
         name=payload.get("name", "New Farmer"),
-        email=payload.get("email", f"farmer_{int(os.times()[4])}@agriwise.ai"),
+        email=payload.get("email", f"farmer_{int(datetime.utcnow().timestamp())}@agriwise.ai"),
         phone=payload.get("phone", "+91 98765 00000"),
         role=payload.get("role", "FARMER").upper(),
         state=payload.get("state", "Punjab"),

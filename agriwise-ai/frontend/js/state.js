@@ -10,6 +10,42 @@ const AgriState = {
   // Current language: en, hi, pa
   currentLang: localStorage.getItem('agriwise_lang') || 'en',
 
+  // Current authenticated user session
+  currentUser: (() => {
+    try {
+      const saved = localStorage.getItem('agriwise_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  })(),
+
+  authToken: localStorage.getItem('agriwise_token') || null,
+
+  isAuthenticated() {
+    return !!(this.authToken || localStorage.getItem('agriwise_token'));
+  },
+
+  login(userData, token, role) {
+    this.currentUser = userData;
+    this.authToken = token;
+    this.currentRole = (role || userData.role || 'FARMER').toUpperCase();
+    localStorage.setItem('agriwise_user', JSON.stringify(userData));
+    localStorage.setItem('agriwise_token', token);
+    localStorage.setItem('agriwise_role', this.currentRole);
+  },
+
+  logout() {
+    this.currentUser = null;
+    this.authToken = null;
+    localStorage.removeItem('agriwise_user');
+    localStorage.removeItem('agriwise_token');
+    if (window.AgriAPI) {
+      window.AgriAPI.logout().catch(() => {});
+    }
+    window.location.href = '/login';
+  },
+
   // Active Farm Profile
   activeFarm: {
     id: 1,
