@@ -128,6 +128,12 @@
         <option value="en">English</option>
         <option value="hi">हिंदी (Hindi)</option>
         <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+        <option value="mr">मराठी (Marathi)</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+        <option value="gu">ગુજરાતી (Gujarati)</option>
+        <option value="bn">বাংলা (Bengali)</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
       </select>
       <a href="/login" style="font-size: 0.88rem; font-weight: 700; color: var(--primary-700); text-decoration: none;">🔐 Sign In</a>
     </div>
@@ -513,6 +519,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       setupRegOtpInputHandlers();
+      const savedLang = localStorage.getItem('agriwise_lang') || 'en';
+      switchRegisterLanguage(savedLang);
     });
 
     // 1. Role Selection
@@ -823,6 +831,48 @@
           lblRole: "ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਲਈ ਆਪਣੀ ਭੂਮਿਕਾ ਚੁਣੋ:",
           lblFullName: "ਪੂਰਾ ਨਾਮ *",
           lblMobile: "ਮੋਬਾਈਲ ਨੰਬਰ *"
+        },
+        mr: {
+          title: "भारतातील सर्वात प्रगत कृषी नेटवर्कशी जोडा.",
+          sub: "१४ कोटींहून अधिक भारतीय शेतकरी आयसीएआर वैज्ञानिक सल्ला, थेट बाजारभाव आणि खरेदीदार संपर्कांसह सक्षम होत आहेत.",
+          lblRole: "नोंदणीसाठी आपली भूमिका निवडा:",
+          lblFullName: "पूर्ण नाव *",
+          lblMobile: "मोबाईल नंबर *"
+        },
+        te: {
+          title: "భారతదేశపు అత్యంత స్మార్ట్ వ్యవసాయ నెట్‌వర్క్‌లో చేరండి.",
+          sub: "14 కోట్లకు పైగా భారతీయ రైతులు ICAR శాస్త్రీయ సలహాలు, ప్రత్యక్ష మార్కెట్ ధరలు మరియు కొనుగోలుదారుల అనుసంధానాలతో లాభపడుతున్నారు.",
+          lblRole: "రిజిస్ట్రేషన్ కోసం మీ పాత్రను ఎంచుకోండి:",
+          lblFullName: "పూర్తి పేరు *",
+          lblMobile: "మొబైల్ నంబర్ *"
+        },
+        ta: {
+          title: "இந்தியாவின் மிகச்சிறந்த வேளாண் நெட்வொர்க்கில் இணையுங்கள்.",
+          sub: "14 கோடிக்கும் மேற்பட்ட விவசாயிகள் ICAR அறிவியல் ஆலோசனை மற்றும் நேரடி சந்தை விலைகளுடன் அதிக லாபம் ஈட்டுகின்றனர்.",
+          lblRole: "பதிவு செய்ய உங்கள் பாத்திரத்தைத் தேர்ந்தெடுக்கவும்:",
+          lblFullName: "முழு பெயர் *",
+          lblMobile: "கைபேசி எண் *"
+        },
+        gu: {
+          title: "ભારતના સૌથી અદ્યતન કૃષિ નેટવર્ક સાથે જોડાઓ.",
+          sub: "14 કરોડથી વધુ ખેડૂતો ICAR વૈજ્ઞાનિક સલાહ અને લાઇવ માર્કેટ ભાવ દ્વારા સશક્ત બની રહ્યા છે.",
+          lblRole: "નોંધણી માટે તમારી ભૂમિકા પસંદ કરો:",
+          lblFullName: "પૂરું નામ *",
+          lblMobile: "મોબાઇલ નંબર *"
+        },
+        bn: {
+          title: "ভারতের সবচেয়ে স্মার্ট কৃষি নেটওয়ার্কে যোগ দিন।",
+          sub: "১৪ কোটিরও বেশি ভারতীয় কৃষক আইসিএআর বৈজ্ঞানিক পরামর্শ এবং লাইভ মান্ডি দরে উপকৃত হচ্ছেন।",
+          lblRole: "নিবন্ধনের জন্য আপনার ভূমিকা নির্বাচন করুন:",
+          lblFullName: "পুরো নাম *",
+          lblMobile: "মোবাইল নম্বর *"
+        },
+        kn: {
+          title: "ಭಾರತದ ಅತ್ಯಂತ ಮುಂದುವರಿದ ಕೃಷಿ ನೆಟ್‌ವರ್ಕ್‌ಗೆ ಸೇರಿ.",
+          sub: "14 ಕೋಟಿಗೂ ಹೆಚ್ಚು ಭಾರತೀಯ ರೈತರು ICAR ವೈಜ್ಞಾನಿಕ ಸಲಹೆ ಮತ್ತು ನೇರ ಮಾರುಕಟ್ಟೆ ಸಂಪರ್ಕಗಳಿಂದ ಸಬಲರಾಗುತ್ತಿದ್ದಾರೆ.",
+          lblRole: "ನೋಂದಣಿಗಾಗಿ ನಿಮ್ಮ ಪಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ:",
+          lblFullName: "ಪೂರ್ಣ ಹೆಸರು *",
+          lblMobile: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ *"
         }
       };
 

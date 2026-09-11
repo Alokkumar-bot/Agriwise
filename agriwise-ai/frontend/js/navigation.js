@@ -10,6 +10,9 @@ const AgriNav = {
     this.renderMobileBottomNav();
     this.renderFooter();
     this.highlightActivePage();
+    if (window.AgriI18n && typeof window.AgriI18n.applyTranslations === 'function') {
+      window.AgriI18n.applyTranslations();
+    }
   },
 
   getCurrentPath() {
@@ -120,11 +123,17 @@ const AgriNav = {
               <button class="role-pill ${currentRole === 'ADMIN' ? 'active' : ''}" onclick="AgriState.setRole('ADMIN')">Admin</button>
             </div>
 
-            <!-- Language Switcher -->
-            <select id="langSelect" class="lang-select" onchange="AgriState.setLang(this.value)">
+            <!-- Multilingual Indian Languages Switcher -->
+            <select id="langSelect" class="lang-select" onchange="AgriState.setLang(this.value)" title="Choose Language / भाषा चुनें">
               <option value="en">English</option>
               <option value="hi">हिंदी (Hindi)</option>
               <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+              <option value="mr">मराठी (Marathi)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
+              <option value="gu">ગુજરાતી (Gujarati)</option>
+              <option value="bn">বাংলা (Bengali)</option>
+              <option value="kn">ಕನ್ನಡ (Kannada)</option>
             </select>
 
             <!-- Notifications Button -->

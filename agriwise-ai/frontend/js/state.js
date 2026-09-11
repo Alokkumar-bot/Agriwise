@@ -104,11 +104,11 @@ const AgriState = {
     window.location.reload();
   },
 
-  setLang(lang) {
+  async setLang(lang) {
     this.currentLang = lang;
     localStorage.setItem('agriwise_lang', lang);
     if (window.AgriI18n) {
-      window.AgriI18n.applyTranslations();
+      await window.AgriI18n.switchLanguage(lang);
     }
   },
 
