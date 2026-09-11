@@ -1,6 +1,6 @@
 """
-🌾 AGRIWISE AI - Launcher Script
-Runs the FastAPI application on http://127.0.0.1:8000 using Uvicorn.
+🌾 AGRIWISE AI - Root Launcher Script
+Allows running from repository root on Render / Production or Local.
 """
 
 import os
@@ -12,7 +12,16 @@ if hasattr(sys.stdout, 'reconfigure'):
 import uvicorn
 
 if __name__ == "__main__":
-    backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Check if backend is directly under base_dir or inside agriwise-ai
+    if os.path.exists(os.path.join(base_dir, "backend")):
+        backend_dir = os.path.join(base_dir, "backend")
+    elif os.path.exists(os.path.join(base_dir, "agriwise-ai", "backend")):
+        backend_dir = os.path.join(base_dir, "agriwise-ai", "backend")
+    else:
+        backend_dir = base_dir
+
     if backend_dir not in sys.path:
         sys.path.insert(0, backend_dir)
 
