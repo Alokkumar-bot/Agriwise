@@ -1817,6 +1817,16 @@ def cancel_equipment_booking(payload: dict = Body(...), db: Session = Depends(ge
         "message": f"Booking cancelled successfully. ₹{refund_amount:,.2f} refunded."
     }
 
+CATEGORY_DEFAULT_IMAGES = {
+    "Tractors": "/images/equipment/mahindra_novo_655.jpg",
+    "Harvesters": "/images/equipment/preet_987_harvester.jpg",
+    "Water Pumps": "/images/equipment/kirloskar_water_pump.jpg",
+    "Rotavators": "/images/equipment/shaktiman_rotavator.jpg",
+    "Seed Drills": "/images/equipment/national_seed_drill.jpg",
+    "Sprayers": "/images/equipment/aspee_boom_sprayer.jpg",
+    "Threshers": "/images/equipment/landforce_thresher.jpg"
+}
+
 @app.post("/api/equipment/list")
 def list_new_equipment(payload: dict = Body(...), db: Session = Depends(get_db)):
     name = payload.get("name")
@@ -1826,6 +1836,8 @@ def list_new_equipment(payload: dict = Body(...), db: Session = Depends(get_db))
 
     if not name:
         raise HTTPException(status_code=400, detail="Equipment name is required")
+
+    default_cat_img = CATEGORY_DEFAULT_IMAGES.get(category, "/images/equipment/john_deere_5310.jpg")
 
     new_eq = Equipment(
         name=name,
@@ -1856,7 +1868,7 @@ def list_new_equipment(payload: dict = Body(...), db: Session = Depends(get_db))
         owner_badge="AgriWise Partner",
         rating=5.0,
         reviews_count=1,
-        image_url=payload.get("image_url") or "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80",
+        image_url=payload.get("image_url") or default_cat_img,
         implements_compatibility=payload.get("implements_compatibility", "Standard 3-point linkage"),
         terms=payload.get("terms", "Valid ID required. Full refund if cancelled > 6 hrs prior."),
         available=True
@@ -1974,6 +1986,8 @@ if os.path.exists(os.path.join(FRONTEND_DIR, "js")):
     app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
 if os.path.exists(os.path.join(FRONTEND_DIR, "locales")):
     app.mount("/locales", StaticFiles(directory=os.path.join(FRONTEND_DIR, "locales")), name="locales")
+if os.path.exists(os.path.join(FRONTEND_DIR, "images")):
+    app.mount("/images", StaticFiles(directory=os.path.join(FRONTEND_DIR, "images")), name="images")
 
 # Route handler for dedicated pages
 ROUTE_PAGE_MAP = {

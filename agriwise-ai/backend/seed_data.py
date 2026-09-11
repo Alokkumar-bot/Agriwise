@@ -2482,7 +2482,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.9,
             "reviews_count": 42,
-            "image_url": "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/john_deere_5310.jpg",
             "implements_compatibility": "MB Plough, 7-ft Rotavator, Disc Harrow, 9-Tyne Cultivator, 5-Tonne Hydraulic Trolley",
             "terms": "Valid Govt ID (Aadhaar/DL) required at handover. Full refund on cancellation > 6 hours prior to start. Fuel tank is provided full.",
             "available": True
@@ -2516,7 +2516,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.8,
             "reviews_count": 38,
-            "image_url": "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/mahindra_novo_655.jpg",
             "implements_compatibility": "Heavy Laser Land Leveler, Subsoiler, Heavy Duty Rotavator, Multi-Crop Pneumatic Planter",
             "terms": "Security deposit refunded immediately upon return inspection. Standard diesel fuel policy applies.",
             "available": True
@@ -2550,7 +2550,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.9,
             "reviews_count": 64,
-            "image_url": "https://images.unsplash.com/photo-1595856754020-f5093122c608?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/preet_987_harvester.jpg",
             "implements_compatibility": "Paddy Cutter Bar, Wheat Reel Header, Straw Management System (SMS) attached",
             "terms": "Certified commercial harvester operator required and included. Minimum 2-hour booking.",
             "available": True
@@ -2584,7 +2584,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.7,
             "reviews_count": 52,
-            "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/kirloskar_water_pump.jpg",
             "implements_compatibility": "50-meter Flexible Delivery Hose, 10-meter Spiral Suction Pipe, Foot Valve & Strainer",
             "terms": "Supplied with suction pipe and clamps. Caution deposit refunded after water test run.",
             "available": True
@@ -2618,7 +2618,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.8,
             "reviews_count": 29,
-            "image_url": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/shaktiman_rotavator.jpg",
             "implements_compatibility": "Connects to any standard 540 RPM PTO shaft. Fits 45-75 HP Category II tractors.",
             "terms": "Please verify PTO spline match (6-spline standard). Full refund if cancelled > 6 hrs prior.",
             "available": True
@@ -2652,7 +2652,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.7,
             "reviews_count": 23,
-            "image_url": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/national_seed_drill.jpg",
             "implements_compatibility": "Calibrated for Wheat, Mustard, Gram, Soybeans, Maize with individual depth adjustments.",
             "terms": "Clean seed hoppers after use. Return in undamaged working order for instant deposit release.",
             "available": True
@@ -2686,7 +2686,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.8,
             "reviews_count": 31,
-            "image_url": "https://images.unsplash.com/photo-1595856754020-f5093122c608?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/landforce_thresher.jpg",
             "implements_compatibility": "Automatic Feeding Hopper, Elevator Bagging Chute, Variable Speed Pulleys",
             "terms": "Includes emergency stop mechanism. Operating instructions provided upon delivery.",
             "available": True
@@ -2720,7 +2720,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.6,
             "reviews_count": 19,
-            "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/aspee_boom_sprayer.jpg",
             "implements_compatibility": "Fits Category I & II tractors. Uniform micron-droplet coverage for pest & nutrient foliar spray.",
             "terms": "Flush tank thoroughly with clean water before return. Full deposit returned upon clean inspection.",
             "available": True
@@ -2754,7 +2754,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.9,
             "reviews_count": 57,
-            "image_url": "https://images.unsplash.com/photo-1595856754020-f5093122c608?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/kubota_dc68g_harvester.jpg",
             "implements_compatibility": "Special rubber tracks prevent field sinking in flooded paddy soils. Includes auto grain unloader.",
             "terms": "Driver & mechanical specialist provided. 100% money back if breakdown exceeds 2 hours.",
             "available": True
@@ -2788,7 +2788,7 @@ def seed_equipment(db):
             "owner_badge": "Verified AgriWise Partner",
             "rating": 4.8,
             "reviews_count": 45,
-            "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+            "image_url": "/images/equipment/sonalika_di745_tractor.jpg",
             "implements_compatibility": "Cultivator 9-Tyne, Rotavator 6ft, Disc Plough, Seed Drill, Heavy 5-Ton Trolley",
             "terms": "Fuel tank is filled to brim on dispatch. Return clean and fueled or pay fuel differential.",
             "available": True
