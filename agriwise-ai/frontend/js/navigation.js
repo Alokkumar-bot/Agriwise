@@ -74,52 +74,28 @@ const AgriNav = {
   renderHeader() {
     const currentRole = window.AgriState.currentRole || 'FARMER';
 
-    // Role-specific navigation links
-    let navLinksHtml = '';
-    if (currentRole === 'DEALER') {
-      navLinksHtml = `
-        <a href="/dealer-dashboard" class="nav-link" data-route="dealer-dashboard">📊 Dealer Overview</a>
-        <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Customer Orders</a>
-        <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Input Inventory</a>
-        <a href="/crop-demand" class="nav-link" data-route="crop-demand">📈 Demand Radar</a>
-        <a href="/payment" class="nav-link" data-route="payment">💳 Payments & POS</a>
-      `;
-    } else if (currentRole === 'TRANSPORTER' || currentRole === 'SERVICE_PROVIDER') {
-      navLinksHtml = `
-        <a href="/transport-dashboard" class="nav-link" data-route="transport-dashboard">🚜 Fleet & Services</a>
-        <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">📍 Available Trips</a>
-        <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📋 Bookings</a>
-        <a href="/crop-shortage" class="nav-link" data-route="crop-shortage">🗺 Deficit Routes</a>
-        <a href="/payment" class="nav-link" data-route="payment">💳 Freight Ledger</a>
-      `;
-    } else if (currentRole === 'BUYER') {
-      navLinksHtml = `
-        <a href="/buyer-dashboard" class="nav-link" data-route="buyer-dashboard">🏢 Procurement Hub</a>
-        <a href="/buyer-marketplace" class="nav-link" data-route="buyer-marketplace">🌾 Tenders</a>
-        <a href="/payment" class="nav-link" data-route="payment">💳 Escrow Vault</a>
-        <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Mandi Prices</a>
-        <a href="/crop-demand" class="nav-link" data-route="crop-demand">📊 Supply Pipeline</a>
-      `;
-    } else if (currentRole === 'ADMIN') {
-      navLinksHtml = `
-        <a href="/admin" class="nav-link" data-route="admin">⚙ System Admin</a>
-        <a href="/payment" class="nav-link" data-route="payment">💳 Payments Engine</a>
-        <a href="/dashboard" class="nav-link" data-route="dashboard">🌾 Farmer View</a>
-        <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Mandi Intelligence</a>
-        <a href="/crop-shortage" class="nav-link" data-route="crop-shortage">🗺 Deficit Map</a>
-      `;
-    } else {
-      // Default FARMER Links
-      navLinksHtml = `
-        <a href="/dashboard" class="nav-link" data-route="dashboard">🌾 Dashboard</a>
-        <a href="/crop-recommendation" class="nav-link" data-route="crop-recommendation">🌱 Crops</a>
-        <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Inputs</a>
-        <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">🚜 Services</a>
-        <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Market</a>
-        <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Orders</a>
-        <a href="/farm-profile" class="nav-link" data-route="farm-profile">👤 Profile</a>
-        <a href="/ai-assistant" class="nav-link" data-route="ai-assistant">🤖 AI Help</a>
-      `;
+    const currentPath = this.getCurrentPath();
+
+    // Universal core agricultural navigation tabs that are ALWAYS visible on top
+    let navLinksHtml = `
+      <a href="/dashboard" class="nav-link" data-route="dashboard">🌾 Dashboard</a>
+      <a href="/crop-recommendation" class="nav-link" data-route="crop-recommendation">🌱 Crops</a>
+      <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Inputs</a>
+      <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">🚜 Services</a>
+      <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Markets</a>
+      <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Orders</a>
+      <a href="/ai-assistant" class="nav-link" data-route="ai-assistant">🤖 AI Advisor</a>
+    `;
+
+    // Specialized role portal tabs seamlessly appended when active or browsing that section
+    if (currentRole === 'DEALER' || currentPath.includes('dealer')) {
+      navLinksHtml += `<a href="/dealer-dashboard" class="nav-link" data-route="dealer-dashboard">🏪 Dealer Hub</a>`;
+    } else if (currentRole === 'SERVICE_PROVIDER' || currentRole === 'TRANSPORTER' || currentPath.includes('transport-dashboard')) {
+      navLinksHtml += `<a href="/transport-dashboard" class="nav-link" data-route="transport-dashboard">🚜 Fleet Hub</a>`;
+    } else if (currentRole === 'ADMIN' || currentPath.includes('admin')) {
+      navLinksHtml += `<a href="/admin" class="nav-link" data-route="admin">⚙️ Admin</a>`;
+    } else if (currentRole === 'BUYER' || currentPath.includes('buyer')) {
+      navLinksHtml += `<a href="/buyer-dashboard" class="nav-link" data-route="buyer-dashboard">🏢 Buyers</a>`;
     }
 
     // Static verified role badge
@@ -165,7 +141,7 @@ const AgriNav = {
 
           <div class="header-actions">
             <!-- Static Permanent Registered Role Badge -->
-            <div class="user-role-badge ${roleBadgeClass}" title="Verified Account Role: ${roleBadgeText}">
+            <div class="user-role-badge ${roleBadgeClass}" onclick="AgriNav.toggleUserDropdown(event)" style="cursor: pointer;" title="Active Role: ${roleBadgeText} (Click to manage role)">
               <span>${roleBadgeIcon}</span>
               <span class="badge-role-text">${roleBadgeText}</span>
             </div>
@@ -401,9 +377,17 @@ const AgriNav = {
               <span>KCC & Escrow Wallet</span>
             </a>
             <div class="user-menu-divider"></div>
+            <div style="padding: 6px 12px 2px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Switch Persona (Demo / Evaluation)</div>
+            <div style="display: flex; gap: 4px; padding: 4px 12px 8px 12px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-sm ${currentRole === 'FARMER' ? 'btn-primary' : 'btn-secondary'}" style="padding: 2px 7px; font-size: 0.74rem;" onclick="AgriNav.switchRolePersona('FARMER')">👨‍🌾 Farmer</button>
+              <button type="button" class="btn btn-sm ${currentRole === 'DEALER' ? 'btn-primary' : 'btn-secondary'}" style="padding: 2px 7px; font-size: 0.74rem;" onclick="AgriNav.switchRolePersona('DEALER')">🏪 Dealer</button>
+              <button type="button" class="btn btn-sm ${(currentRole === 'SERVICE_PROVIDER' || currentRole === 'TRANSPORTER') ? 'btn-primary' : 'btn-secondary'}" style="padding: 2px 7px; font-size: 0.74rem;" onclick="AgriNav.switchRolePersona('SERVICE_PROVIDER')">🚜 Provider</button>
+              <button type="button" class="btn btn-sm ${currentRole === 'ADMIN' ? 'btn-primary' : 'btn-secondary'}" style="padding: 2px 7px; font-size: 0.74rem;" onclick="AgriNav.switchRolePersona('ADMIN')">⚙️ Admin</button>
+            </div>
+            <div class="user-menu-divider"></div>
             <a href="/login" class="user-menu-item" style="color: var(--primary-700);">
               <span>🔄</span>
-              <span>Switch Account</span>
+              <span>Switch Account / Login</span>
             </a>
             <button type="button" onclick="AgriState.logout()" class="user-menu-item" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; color: #dc2626;">
               <span>🚪</span>
@@ -425,6 +409,21 @@ const AgriNav = {
     if (e) e.stopPropagation();
     const menu = document.getElementById('userNavMenu');
     if (menu) menu.classList.toggle('show');
+  },
+
+  switchRolePersona(newRole) {
+    if (window.AgriState) {
+      AgriState.currentRole = newRole;
+      if (AgriState.currentUser) {
+        AgriState.currentUser.role = newRole;
+        localStorage.setItem('agriwise_user', JSON.stringify(AgriState.currentUser));
+      }
+      localStorage.setItem('agriwise_role', newRole);
+    }
+    const dest = newRole === 'DEALER' ? '/dealer-dashboard' :
+                 (newRole === 'SERVICE_PROVIDER' || newRole === 'TRANSPORTER') ? '/transport-dashboard' :
+                 newRole === 'ADMIN' ? '/admin' : '/dashboard';
+    window.location.href = dest;
   },
 
   setupDropdownListeners() {
