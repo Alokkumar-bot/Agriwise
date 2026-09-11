@@ -172,6 +172,76 @@
               </div>
             </div>
 
+            <!-- Product 1B: HD-2967 Certified Wheat Seed -->
+            <div class="product-card" data-category="Seed" data-price="1320" data-dist="4.5" data-rating="4.9">
+              <div class="product-image-container">
+                <span class="badge badge-emerald product-badge-top">ICAR Certified</span>
+                <div class="product-image-icon">🌾</div>
+              </div>
+              <div class="product-content">
+                <div class="product-category">Certified Seed Variety</div>
+                <h4 class="product-name">HD-2967 Certified Wheat Seed (40 kg bag)</h4>
+                <div class="product-dealer-info">
+                  <span>🏪 Kisan Seva Kendra Sahnewal</span>
+                  <span>• <strong>4.5 km away</strong></span>
+                </div>
+                <div class="product-rating">4.9 ★ (110 farmer reviews)</div>
+                <div style="font-size: 0.82rem; color: #059669; margin-bottom: 0.5rem;">
+                  ✓ 85 bags in stock • High tillering & rust resistant
+                </div>
+
+                <div class="product-price-section">
+                  <div class="product-price">₹1,320</div>
+                  <div class="product-mrp">₹1,500</div>
+                  <div class="product-discount">12% Off</div>
+                </div>
+
+                <div class="product-card-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="contactDealer('Kisan Seva Kendra', '+91 98141 23456')">
+                    <span>📞 Call Dealer</span>
+                  </button>
+                  <button class="btn btn-primary btn-sm" onclick="openOrderModal('HD-2967 Certified Wheat Seed (40 kg)', 1320, 'Kisan Seva Kendra')">
+                    <span>⚡ Buy Now</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Product 1C: Pioneer 45S46 Mustard Seed -->
+            <div class="product-card" data-category="Seed" data-price="850" data-dist="7.5" data-rating="4.8">
+              <div class="product-image-container">
+                <span class="badge badge-amber product-badge-top">High Oil Content</span>
+                <div class="product-image-icon">🌼</div>
+              </div>
+              <div class="product-content">
+                <div class="product-category">Certified Seed Variety</div>
+                <h4 class="product-name">Pioneer 45S46 Hybrid Mustard Seed (1 kg)</h4>
+                <div class="product-dealer-info">
+                  <span>🏪 Ludhiana Agro Inputs Hub</span>
+                  <span>• <strong>7.5 km away</strong></span>
+                </div>
+                <div class="product-rating">4.8 ★ (58 farmer reviews)</div>
+                <div style="font-size: 0.82rem; color: #059669; margin-bottom: 0.5rem;">
+                  ✓ 30 packs in stock • 42% Oil Content Yield
+                </div>
+
+                <div class="product-price-section">
+                  <div class="product-price">₹850</div>
+                  <div class="product-mrp">₹950</div>
+                  <div class="product-discount">10% Off</div>
+                </div>
+
+                <div class="product-card-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="contactDealer('Ludhiana Agro Inputs Hub', '+91 98141 55667')">
+                    <span>📞 Call Dealer</span>
+                  </button>
+                  <button class="btn btn-primary btn-sm" onclick="openOrderModal('Pioneer 45S46 Mustard Seed (1 kg)', 850, 'Ludhiana Agro Inputs Hub')">
+                    <span>⚡ Buy Now</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Product 2: Neem Coated Urea -->
             <div class="product-card" data-category="Fertilizer" data-price="266.5" data-dist="4.5" data-rating="4.9">
               <div class="product-image-container">
@@ -464,19 +534,107 @@
     }
 
     function filterProducts() {
-      const search = document.getElementById('marketSearch').value.toLowerCase();
+      const search = (document.getElementById('marketSearch').value || '').toLowerCase().trim();
+      
+      // 1. Get selected categories
+      const catCheckboxes = document.querySelectorAll('.filter-group:nth-of-type(1) input[type="checkbox"]');
+      let selectedCats = [];
+      let isAllCats = false;
+      catCheckboxes.forEach(cb => {
+        if (cb.checked) {
+          if (cb.value === 'all') isAllCats = true;
+          else selectedCats.push(cb.value);
+        }
+      });
+      if (selectedCats.length === 0) isAllCats = true;
+
+      // 2. Get distance filter
+      const distRadio = document.querySelector('input[name="distFilter"]:checked');
+      const maxDist = distRadio ? parseFloat(distRadio.value) : 50;
+
       const cards = document.querySelectorAll('.product-card');
+      let visibleCount = 0;
 
       cards.forEach(card => {
-        const title = card.querySelector('.product-name').innerText.toLowerCase();
-        const dealer = card.querySelector('.product-dealer-info').innerText.toLowerCase();
-        const matches = title.includes(search) || dealer.includes(search);
-        card.style.display = matches ? 'flex' : 'none';
+        const category = card.getAttribute('data-category');
+        const dist = parseFloat(card.getAttribute('data-dist')) || 0;
+        const title = (card.querySelector('.product-name')?.innerText || '').toLowerCase();
+        const dealer = (card.querySelector('.product-dealer-info')?.innerText || '').toLowerCase();
+
+        // Check category
+        const catMatch = isAllCats || selectedCats.includes(category);
+
+        // Check distance
+        const distMatch = dist <= maxDist;
+
+        // Check search
+        const searchMatch = !search || title.includes(search) || dealer.includes(search) || (category && category.toLowerCase().includes(search));
+
+        const visible = catMatch && distMatch && searchMatch;
+        card.style.display = visible ? 'flex' : 'none';
+        if (visible) visibleCount++;
       });
+
+      // Empty state handler
+      let noMatchMsg = document.getElementById('noProductMatchMsg');
+      if (visibleCount === 0) {
+        if (!noMatchMsg) {
+          const msg = document.createElement('div');
+          msg.id = 'noProductMatchMsg';
+          msg.style.textAlign = 'center';
+          msg.style.padding = '3rem 1rem';
+          msg.style.gridColumn = '1 / -1';
+          msg.style.background = '#f8fafc';
+          msg.style.borderRadius = '12px';
+          msg.style.border = '1px dashed #cbd5e1';
+          msg.innerHTML = `
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+            <h4 style="color: #0f172a; margin-bottom: 0.25rem;">No Agricultural Inputs Found</h4>
+            <p style="color: #64748b; font-size: 0.9rem; max-width: 400px; margin: 0 auto 1rem;">No products match your active category, distance, or search criteria.</p>
+            <button class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset All Filters</button>
+          `;
+          document.getElementById('productGrid').appendChild(msg);
+        } else {
+          noMatchMsg.style.display = 'block';
+        }
+      } else if (noMatchMsg) {
+        noMatchMsg.style.display = 'none';
+      }
+
+      sortProducts();
+    }
+
+    function sortProducts() {
+      const sortVal = document.getElementById('sortSelect').value;
+      const grid = document.getElementById('productGrid');
+      if (!grid) return;
+      const cards = Array.from(grid.querySelectorAll('.product-card'));
+
+      cards.sort((a, b) => {
+        const priceA = parseFloat(a.getAttribute('data-price')) || 0;
+        const priceB = parseFloat(b.getAttribute('data-price')) || 0;
+        const distA = parseFloat(a.getAttribute('data-dist')) || 0;
+        const distB = parseFloat(b.getAttribute('data-dist')) || 0;
+        const ratingA = parseFloat(a.getAttribute('data-rating')) || 0;
+        const ratingB = parseFloat(b.getAttribute('data-rating')) || 0;
+
+        if (sortVal === 'price-low') return priceA - priceB;
+        if (sortVal === 'rating') return ratingB - ratingA;
+        return distA - distB; // proximity default
+      });
+
+      cards.forEach(card => grid.appendChild(card));
     }
 
     function resetFilters() {
       document.getElementById('marketSearch').value = '';
+      const catAll = document.querySelector('.filter-group:nth-of-type(1) input[value="all"]');
+      if (catAll) catAll.checked = true;
+      document.querySelectorAll('.filter-group:nth-of-type(1) input[type="checkbox"]').forEach(cb => {
+        if (cb.value !== 'all') cb.checked = false;
+      });
+      const dist10 = document.querySelector('input[name="distFilter"][value="10"]');
+      if (dist10) dist10.checked = true;
       filterProducts();
     }
   </script>

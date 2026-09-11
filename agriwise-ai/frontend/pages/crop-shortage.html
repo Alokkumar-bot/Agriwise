@@ -28,10 +28,12 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div style="display: flex; align-items: center; gap: 1rem;">
             <label style="font-weight: 700; color: var(--text-main);">Select Target Crop:</label>
-            <select id="shortageCropSelect" class="form-control" style="width: 220px; font-weight: 700;" onchange="loadShortageData()">
+            <select id="shortageCropSelect" class="form-control" style="width: 240px; font-weight: 700;" onchange="loadShortageData()">
               <option value="Maize" selected>🌽 Maize (Corn)</option>
-              <option value="Soybean">🌱 Soybean</option>
-              <option value="Wheat">🌾 Wheat</option>
+              <option value="Wheat">🌾 Wheat (Gehu)</option>
+              <option value="Soybean">🌱 Soybean (Pili Soy)</option>
+              <option value="Basmati Rice">🍚 Basmati Rice</option>
+              <option value="Mustard">🌼 Mustard (Sarson)</option>
             </select>
           </div>
 
@@ -129,35 +131,53 @@
   <script>
     let shortageDataCache = [];
 
-    document.addEventListener('DOMContentLoaded', loadShortageData);
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedCrop = localStorage.getItem('agriwise_selected_crop');
+      if (savedCrop && document.querySelector(`#shortageCropSelect option[value="${savedCrop}"]`)) {
+        document.getElementById('shortageCropSelect').value = savedCrop;
+      }
+      loadShortageData();
+    });
 
     async function loadShortageData() {
       const crop = document.getElementById('shortageCropSelect').value;
-      document.getElementById('activeCropBadge').innerText = `${crop} Deficit Map`;
+      if (window.AgriState) {
+        AgriState.setSelectedCrop(crop);
+      }
+      document.getElementById('activeCropBadge').innerText = `${crop} Regional Supply Map`;
 
       try {
         const data = await AgriAPI.getShortageData(crop);
-        shortageDataCache = data;
-        AgriMaps.renderIndiaShortageMap('indiaShortageMapContainer', data, (stateCode, stateData) => {
+        shortageDataCache = data || [];
+
+        AgriMaps.renderIndiaShortageMap('indiaShortageMapContainer', shortageDataCache, (stateCode, stateData) => {
           if (stateData) {
             updateStateDetailCard(stateData);
           }
         });
 
-        // Set default display to Punjab if available
-        const defaultState = data.find(d => d.state_code === 'PB') || data[0];
+        // Prefer home state Punjab, else pick state with top volume/deficit
+        const defaultState = shortageDataCache.find(d => d.state_code === 'PB') || shortageDataCache[0];
         if (defaultState) {
           updateStateDetailCard(defaultState);
         }
       } catch (e) {
-        console.warn("Failed to load shortage data", e);
+        console.warn("Failed to load shortage data from API", e);
       }
     }
 
     function updateStateDetailCard(d) {
       document.getElementById('stateDetailName').innerText = `${d.state_name} (${d.state_code}) — ${d.status}`;
-      document.getElementById('stateStatusBadge').innerText = `${d.deficit_pct > 0 ? '+' : ''}${d.deficit_pct.toFixed(1)}% Deficit`;
-      document.getElementById('stateStatusBadge').className = d.status.includes('High') ? 'badge badge-rose' : (d.status.includes('Surplus') ? 'badge badge-emerald' : 'badge badge-amber');
+      
+      const isSurplus = d.deficit_tonnes < 0 || d.status.includes('Surplus');
+      const isHigh = d.status.includes('High');
+
+      const badgeText = isSurplus 
+        ? `${Math.abs(d.deficit_pct).toFixed(1)}% Regional Surplus`
+        : `${Math.abs(d.deficit_pct).toFixed(1)}% Supply Deficit`;
+
+      document.getElementById('stateStatusBadge').innerText = badgeText;
+      document.getElementById('stateStatusBadge').className = isHigh ? 'badge badge-rose' : (isSurplus ? 'badge badge-emerald' : 'badge badge-amber');
       document.getElementById('stateDemand').innerText = `${d.demand_tonnes.toLocaleString()} T`;
       document.getElementById('stateSupply').innerText = `${d.supply_tonnes.toLocaleString()} T`;
       document.getElementById('stateDeficit').innerText = `${d.deficit_tonnes > 0 ? '+' : ''}${d.deficit_tonnes.toLocaleString()} T`;
