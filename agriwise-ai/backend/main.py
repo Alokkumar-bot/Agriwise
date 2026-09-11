@@ -81,7 +81,7 @@ def get_dashboard_redirect(role: str) -> str:
     role = (role or "FARMER").upper()
     if role == "DEALER":
         return "/dealer-dashboard"
-    elif role == "TRANSPORTER":
+    elif role in ["SERVICE_PROVIDER", "TRANSPORTER"]:
         return "/transport-dashboard"
     elif role == "BUYER":
         return "/buyer-dashboard"
@@ -90,9 +90,16 @@ def get_dashboard_redirect(role: str) -> str:
     return "/dashboard"
 
 @app.get("/api/auth/me")
-def get_current_user(role: Optional[str] = None, db: Session = Depends(get_db)):
-    target_role = role.upper() if role else "FARMER"
-    user = db.query(User).filter(User.role == target_role).first()
+def get_current_user(role: Optional[str] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    user = None
+    if user_id:
+        user = db.query(User).filter(User.id == user_id).first()
+    if not user and role:
+        target_role = role.upper()
+        if target_role == "SERVICE_PROVIDER":
+            user = db.query(User).filter((User.role == "SERVICE_PROVIDER") | (User.role == "TRANSPORTER")).first()
+        else:
+            user = db.query(User).filter(User.role == target_role).first()
     if not user:
         user = db.query(User).first()
 
@@ -127,16 +134,22 @@ def login(payload: dict = Body(...), db: Session = Depends(get_db)):
     # 1. Search by email or phone match
     if identifier:
         user = db.query(User).filter(
-            (User.email.ilike(identifier)) | (User.phone.contains(identifier))
+            (User.email.ilike(identifier)) | (User.phone == identifier) | (User.phone.contains(identifier))
         ).first()
 
     # 2. Search by role if requested
-    if not user and requested_role in ["FARMER", "DEALER", "TRANSPORTER", "BUYER", "ADMIN"]:
-        user = db.query(User).filter(User.role == requested_role).first()
+    if not user and requested_role in ["FARMER", "DEALER", "SERVICE_PROVIDER", "TRANSPORTER", "BUYER", "ADMIN"]:
+        if requested_role == "SERVICE_PROVIDER":
+            user = db.query(User).filter((User.role == "SERVICE_PROVIDER") | (User.role == "TRANSPORTER")).first()
+        else:
+            user = db.query(User).filter(User.role == requested_role).first()
 
     # 3. Check identifier matching role name
-    if not user and identifier.upper() in ["FARMER", "DEALER", "TRANSPORTER", "BUYER", "ADMIN"]:
-        user = db.query(User).filter(User.role == identifier.upper()).first()
+    if not user and identifier.upper() in ["FARMER", "DEALER", "SERVICE_PROVIDER", "TRANSPORTER", "BUYER", "ADMIN"]:
+        if identifier.upper() == "SERVICE_PROVIDER":
+            user = db.query(User).filter((User.role == "SERVICE_PROVIDER") | (User.role == "TRANSPORTER")).first()
+        else:
+            user = db.query(User).filter(User.role == identifier.upper()).first()
 
     # 4. Fallback to default user
     if not user:
@@ -364,11 +377,12 @@ def register(payload: dict = Body(...), db: Session = Depends(get_db)):
             db.add(dealer)
             db.commit()
 
-        elif role == "TRANSPORTER":
+        elif role in ["SERVICE_PROVIDER", "TRANSPORTER"]:
+            user.role = "SERVICE_PROVIDER"
             tp = TransportProvider(
-                operator_name=payload.get("business_name") or f"{name} Logistics",
+                operator_name=payload.get("business_name") or f"{name} Agricultural Services",
                 phone=phone,
-                vehicle_type=payload.get("vehicle_type") or "Tata 407 (Open Bed)",
+                vehicle_type=payload.get("vehicle_type") or "Tractor & Commercial Vehicle",
                 capacity_tonnes=10.0,
                 base_rate_inr=1800.0,
                 rate_per_km_inr=26.0,
@@ -930,32 +944,56 @@ def chat_assistant(payload: dict = Body(...), db: Session = Depends(get_db)):
 # 11. API: Orders & Notifications
 # ==========================================
 @app.get("/api/orders")
-def get_orders(db: Session = Depends(get_db)):
-    orders = db.query(Order).order_by(Order.created_at.desc()).all()
+def get_orders(user_id: Optional[int] = None, role: Optional[str] = None, partner_name: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(Order)
+    if user_id:
+        query = query.filter(Order.user_id == user_id)
+    if partner_name:
+        query = query.filter(Order.partner_name.ilike(f"%{partner_name}%"))
+    orders = query.order_by(Order.created_at.desc()).all()
     return [
         {
             "id": o.id,
+            "user_id": o.user_id,
             "order_type": o.order_type,
             "item_title": o.item_title,
             "quantity": o.quantity,
             "amount_inr": o.amount_inr,
             "status": o.status,
             "partner_name": o.partner_name,
+            "items_json": getattr(o, "items_json", "[]"),
+            "delivery_address": getattr(o, "delivery_address", ""),
             "created_at": o.created_at.strftime("%Y-%m-%d %H:%M")
         } for o in orders
     ]
 
 @app.post("/api/orders")
 def create_order(payload: dict = Body(...), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.role == "FARMER").first()
+    user_id = payload.get("user_id")
+    user = None
+    if user_id:
+        user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user:
+        user = db.query(User).filter(User.role == "FARMER").first()
+    if not user:
+        user = db.query(User).first()
+
+    raw_items = payload.get("items")
+    if isinstance(raw_items, list):
+        items_str = json.dumps(raw_items)
+    else:
+        items_str = str(payload.get("items_json", "[]"))
+
     new_order = Order(
-        user_id=user.id,
+        user_id=user.id if user else 1,
         order_type=payload.get("order_type", "INPUT"),
-        item_title=payload.get("item_title", "General Agricultural Order"),
-        quantity=payload.get("quantity", "1 Unit"),
-        amount_inr=float(payload.get("amount_inr", 0.0)),
-        status="CONFIRMED",
-        partner_name=payload.get("partner_name", "AgriWise Partner")
+        item_title=payload.get("item_title", "Agricultural Inputs Order"),
+        quantity=payload.get("quantity", "1 Order"),
+        amount_inr=float(payload.get("amount_inr") or payload.get("total_amount") or 0.0),
+        status=payload.get("status", "CONFIRMED"),
+        partner_name=payload.get("partner_name", "Kisan Seva Kendra Sahnewal"),
+        items_json=items_str,
+        delivery_address=payload.get("delivery_address", f"{user.village}, {user.district}" if user else "Sahnewal, Ludhiana")
     )
     db.add(new_order)
 
@@ -968,8 +1006,27 @@ def create_order(payload: dict = Body(...), db: Session = Depends(get_db)):
     )
     db.add(notif)
     db.commit()
+    db.refresh(new_order)
 
-    return {"success": True, "order_id": new_order.id, "message": "Order successfully created"}
+    return {
+        "success": True,
+        "order_id": new_order.id,
+        "id": new_order.id,
+        "amount_inr": new_order.amount_inr,
+        "total_amount": new_order.amount_inr,
+        "delivery_address": new_order.delivery_address,
+        "message": "Order successfully created"
+    }
+
+@app.patch("/api/orders/{order_id}/status")
+def update_order_status(order_id: int, payload: dict = Body(...), db: Session = Depends(get_db)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    new_status = payload.get("status", "CONFIRMED").upper()
+    order.status = new_status
+    db.commit()
+    return {"success": True, "order_id": order.id, "status": order.status}
 
 @app.get("/api/notifications")
 def get_notifications(db: Session = Depends(get_db)):

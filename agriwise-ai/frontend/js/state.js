@@ -4,13 +4,7 @@
  */
 
 const AgriState = {
-  // Current active role: FARMER, DEALER, TRANSPORTER, BUYER, ADMIN
-  currentRole: localStorage.getItem('agriwise_role') || 'FARMER',
-
-  // Current language: en, hi, pa
-  currentLang: localStorage.getItem('agriwise_lang') || 'en',
-
-  // Current authenticated user session
+  // Current authenticated user session (permanent from registration / login)
   currentUser: (() => {
     try {
       const saved = localStorage.getItem('agriwise_user');
@@ -20,6 +14,22 @@ const AgriState = {
     }
   })(),
 
+  // Current fixed role: FARMER, DEALER, SERVICE_PROVIDER
+  get currentRole() {
+    if (this.currentUser && this.currentUser.role) {
+      return this.currentUser.role.toUpperCase();
+    }
+    return (localStorage.getItem('agriwise_role') || 'FARMER').toUpperCase();
+  },
+  set currentRole(r) {
+    if (r) {
+      localStorage.setItem('agriwise_role', r.toUpperCase());
+    }
+  },
+
+  // Current language: en, hi, pa, mr, te, ta, gu, bn, kn
+  currentLang: localStorage.getItem('agriwise_lang') || 'en',
+
   authToken: localStorage.getItem('agriwise_token') || null,
 
   isAuthenticated() {
@@ -27,12 +37,13 @@ const AgriState = {
   },
 
   login(userData, token, role) {
+    const fixedRole = (userData.role || role || 'FARMER').toUpperCase();
+    userData.role = fixedRole;
     this.currentUser = userData;
     this.authToken = token;
-    this.currentRole = (role || userData.role || 'FARMER').toUpperCase();
     localStorage.setItem('agriwise_user', JSON.stringify(userData));
     localStorage.setItem('agriwise_token', token);
-    localStorage.setItem('agriwise_role', this.currentRole);
+    localStorage.setItem('agriwise_role', fixedRole);
   },
 
   logout() {
@@ -44,6 +55,15 @@ const AgriState = {
       window.AgriAPI.logout().catch(() => {});
     }
     window.location.href = '/login';
+  },
+
+  setLang(lang) {
+    if (!lang) return;
+    this.currentLang = lang;
+    localStorage.setItem('agriwise_lang', lang);
+    if (window.AgriI18n && typeof window.AgriI18n.switchLanguage === 'function') {
+      window.AgriI18n.switchLanguage(lang);
+    }
   },
 
   // Active Farm Profile
@@ -99,17 +119,15 @@ const AgriState = {
   ],
 
   setRole(role) {
-    this.currentRole = role.toUpperCase();
-    localStorage.setItem('agriwise_role', this.currentRole);
-    window.location.reload();
-  },
-
-  async setLang(lang) {
-    this.currentLang = lang;
-    localStorage.setItem('agriwise_lang', lang);
-    if (window.AgriI18n) {
-      await window.AgriI18n.switchLanguage(lang);
+    if (this.currentUser) {
+      // If user is logged in, their role is permanent
+      console.warn("User role is permanent and cannot be changed without explicit account switch.");
+      return;
     }
+    const r = role.toUpperCase();
+    this.currentRole = r;
+    localStorage.setItem('agriwise_role', r);
+    window.location.reload();
   },
 
   setSelectedCrop(cropName) {
@@ -117,16 +135,43 @@ const AgriState = {
     localStorage.setItem('agriwise_selected_crop', cropName);
   },
 
+  setCrop(cropName) {
+    this.setSelectedCrop(cropName);
+  },
+
   setSelectedSeed(seedName) {
     this.selectedSeed = seedName;
     localStorage.setItem('agriwise_selected_seed', seedName);
   },
 
-  formatCurrency(num) {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+  setSeed(seedName) {
+    this.setSelectedSeed(seedName);
+  },
+
+  formatCurrency(num, compact = false) {
+    if (num === null || num === undefined || isNaN(num)) return '₹0';
+    num = Number(num);
+    const sign = num < 0 ? '-' : '';
+    const abs = Math.abs(num);
+
+    if (compact) {
+      if (abs >= 10000000) {
+        const cr = (abs / 10000000).toFixed(abs % 10000000 === 0 ? 0 : 2);
+        return `${sign}₹${cr} Cr`;
+      }
+      if (abs >= 100000) {
+        const lakh = (abs / 100000).toFixed(abs % 100000 === 0 ? 0 : 2);
+        return `${sign}₹${lakh} Lakh`;
+      }
+      if (abs >= 1000) {
+        return `${sign}₹${Math.round(abs).toLocaleString('en-IN')}`;
+      }
+    }
+    return `${sign}₹${Math.round(abs).toLocaleString('en-IN')}`;
   },
 
   formatNumber(num) {
+    if (num === null || num === undefined || isNaN(num)) return '0';
     return new Intl.NumberFormat('en-IN').format(num);
   }
 };

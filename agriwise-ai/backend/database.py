@@ -23,12 +23,13 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True)
     phone = Column(String, nullable=False)
-    role = Column(String, default="FARMER")  # FARMER, DEALER, TRANSPORTER, BUYER, ADMIN
+    role = Column(String, default="FARMER")  # FARMER, DEALER, SERVICE_PROVIDER, TRANSPORTER, BUYER, ADMIN
     state = Column(String, default="Punjab")
     district = Column(String, default="Ludhiana")
     village = Column(String, default="Sahnewal")
     farm_size_acres = Column(Float, default=5.0)
     experience_years = Column(Integer, default=12)
+    password_hash = Column(String, default="agriwise2026")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     farms = relationship("Farm", back_populates="owner")
@@ -234,6 +235,9 @@ class Order(Base):
     amount_inr = Column(Float, default=0.0)
     status = Column(String, default="CONFIRMED") # PENDING, CONFIRMED, DISPATCHED, COMPLETED
     partner_name = Column(String, default="")
+    items_json = Column(Text, default="[]")
+    delivery_address = Column(String, default="")
+    dealer_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")

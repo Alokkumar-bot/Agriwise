@@ -426,6 +426,12 @@
         name: 'Rajinder Kumar',
         password: 'password123'
       },
+      SERVICE_PROVIDER: {
+        identifier: 'balwinder.transport@agriwise.ai',
+        phone: '9872289012',
+        name: 'Balwinder Singh',
+        password: 'password123'
+      },
       TRANSPORTER: {
         identifier: 'balwinder.transport@agriwise.ai',
         phone: '9872289012',
@@ -782,7 +788,7 @@
     function getRedirectByRole(role) {
       role = (role || 'FARMER').toUpperCase();
       if (role === 'DEALER') return '/dealer-dashboard';
-      if (role === 'TRANSPORTER') return '/transport-dashboard';
+      if (role === 'TRANSPORTER' || role === 'SERVICE_PROVIDER') return '/transport-dashboard';
       if (role === 'BUYER') return '/buyer-dashboard';
       if (role === 'ADMIN') return '/admin';
       return '/dashboard';

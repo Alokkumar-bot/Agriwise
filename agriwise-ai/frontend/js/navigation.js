@@ -5,13 +5,35 @@
 
 const AgriNav = {
   init() {
+    this.ensureCartLoaded();
     this.renderDemoBanner();
     this.renderHeader();
+    this.renderMobileDrawer();
     this.renderMobileBottomNav();
     this.renderFooter();
     this.highlightActivePage();
+    this.syncLanguageDropdown();
     if (window.AgriI18n && typeof window.AgriI18n.applyTranslations === 'function') {
       window.AgriI18n.applyTranslations();
+    }
+    if (window.AgriCart && typeof window.AgriCart.updateBadges === 'function') {
+      window.AgriCart.updateBadges();
+    }
+  },
+
+  ensureCartLoaded() {
+    if (!window.AgriCart && !document.querySelector('script[src*="cart.js"]')) {
+      const script = document.createElement('script');
+      script.src = '/js/cart.js';
+      document.head.appendChild(script);
+    }
+  },
+
+  syncLanguageDropdown() {
+    const langSelect = document.getElementById('langSelect');
+    const curLang = (window.AgriState && window.AgriState.currentLang) || localStorage.getItem('agriwise_lang') || 'en';
+    if (langSelect) {
+      langSelect.value = curLang;
     }
   },
 
@@ -50,25 +72,25 @@ const AgriNav = {
   },
 
   renderHeader() {
-    const currentRole = window.AgriState.currentRole;
+    const currentRole = window.AgriState.currentRole || 'FARMER';
 
     // Role-specific navigation links
     let navLinksHtml = '';
     if (currentRole === 'DEALER') {
       navLinksHtml = `
         <a href="/dealer-dashboard" class="nav-link" data-route="dealer-dashboard">📊 Dealer Overview</a>
-        <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Inventory</a>
+        <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Customer Orders</a>
+        <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Input Inventory</a>
         <a href="/crop-demand" class="nav-link" data-route="crop-demand">📈 Demand Radar</a>
         <a href="/payment" class="nav-link" data-route="payment">💳 Payments & POS</a>
-        <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Orders</a>
       `;
-    } else if (currentRole === 'TRANSPORTER') {
+    } else if (currentRole === 'TRANSPORTER' || currentRole === 'SERVICE_PROVIDER') {
       navLinksHtml = `
-        <a href="/transport-dashboard" class="nav-link" data-route="transport-dashboard">🚛 Fleet Overview</a>
+        <a href="/transport-dashboard" class="nav-link" data-route="transport-dashboard">🚜 Fleet & Services</a>
         <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">📍 Available Trips</a>
-        <a href="/payment" class="nav-link" data-route="payment">💳 Freight Ledger</a>
-        <a href="/crop-shortage" class="nav-link" data-route="crop-shortage">🗺 Interstate Routes</a>
         <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📋 Bookings</a>
+        <a href="/crop-shortage" class="nav-link" data-route="crop-shortage">🗺 Deficit Routes</a>
+        <a href="/payment" class="nav-link" data-route="payment">💳 Freight Ledger</a>
       `;
     } else if (currentRole === 'BUYER') {
       navLinksHtml = `
@@ -90,41 +112,73 @@ const AgriNav = {
       // Default FARMER Links
       navLinksHtml = `
         <a href="/dashboard" class="nav-link" data-route="dashboard">🌾 Dashboard</a>
-        <a href="/farm-analysis" class="nav-link" data-route="farm-analysis">🔬 Soil & Water</a>
         <a href="/crop-recommendation" class="nav-link" data-route="crop-recommendation">🌱 Crops</a>
         <a href="/fertilizer-market" class="nav-link" data-route="fertilizer-market">🛒 Inputs</a>
-        <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Markets</a>
-        <a href="/crop-shortage" class="nav-link" data-route="crop-shortage">🗺 Shortages</a>
-        <a href="/farm-to-market" class="nav-link" data-route="farm-to-market">🚜 Farm-to-Market</a>
-        <a href="/payment" class="nav-link" data-route="payment">💳 Payments</a>
-        <a href="/ai-assistant" class="nav-link" data-route="ai-assistant">🤖 AI Advisor</a>
+        <a href="/transport-marketplace" class="nav-link" data-route="transport-marketplace">🚜 Services</a>
+        <a href="/market-intelligence" class="nav-link" data-route="market-intelligence">💹 Market</a>
+        <a href="/farmer-orders" class="nav-link" data-route="farmer-orders">📦 Orders</a>
+        <a href="/farm-profile" class="nav-link" data-route="farm-profile">👤 Profile</a>
+        <a href="/ai-assistant" class="nav-link" data-route="ai-assistant">🤖 AI Help</a>
       `;
+    }
+
+    // Static verified role badge
+    let roleBadgeClass = 'badge-role-farmer';
+    let roleBadgeText = 'Farmer';
+    let roleBadgeIcon = '👨‍🌾';
+
+    if (currentRole === 'DEALER') {
+      roleBadgeClass = 'badge-role-dealer';
+      roleBadgeText = 'Dealer';
+      roleBadgeIcon = '🏪';
+    } else if (currentRole === 'SERVICE_PROVIDER' || currentRole === 'TRANSPORTER') {
+      roleBadgeClass = 'badge-role-provider';
+      roleBadgeText = 'Service Provider';
+      roleBadgeIcon = '🚜';
+    } else if (currentRole === 'BUYER') {
+      roleBadgeClass = 'badge-role-buyer';
+      roleBadgeText = 'Buyer';
+      roleBadgeIcon = '🏢';
+    } else if (currentRole === 'ADMIN') {
+      roleBadgeClass = 'badge-role-admin';
+      roleBadgeText = 'Admin';
+      roleBadgeIcon = '⚙️';
     }
 
     const headerHtml = `
       <header class="main-header">
         <div class="container nav-container">
-          <a href="/" class="brand-logo">
-            <div class="brand-icon">🌾</div>
-            <span>AGRIWISE<span class="ai-tag">AI</span></span>
-          </a>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <!-- Mobile Menu Toggle Button -->
+            <button type="button" class="mobile-menu-toggle" onclick="AgriNav.toggleMobileDrawer()" title="Open Navigation Menu">
+              ☰
+            </button>
+            <a href="/" class="brand-logo">
+              <div class="brand-icon">🌾</div>
+              <span>AGRIWISE<span class="ai-tag">AI</span></span>
+            </a>
+          </div>
 
           <nav class="nav-links">
             ${navLinksHtml}
           </nav>
 
           <div class="header-actions">
-            <!-- Role Switcher -->
-            <div class="role-badge-selector" title="Switch User Role">
-              <button class="role-pill ${currentRole === 'FARMER' ? 'active' : ''}" onclick="AgriState.setRole('FARMER')">Farmer</button>
-              <button class="role-pill ${currentRole === 'DEALER' ? 'active' : ''}" onclick="AgriState.setRole('DEALER')">Dealer</button>
-              <button class="role-pill ${currentRole === 'TRANSPORTER' ? 'active' : ''}" onclick="AgriState.setRole('TRANSPORTER')">Transport</button>
-              <button class="role-pill ${currentRole === 'BUYER' ? 'active' : ''}" onclick="AgriState.setRole('BUYER')">Buyer</button>
-              <button class="role-pill ${currentRole === 'ADMIN' ? 'active' : ''}" onclick="AgriState.setRole('ADMIN')">Admin</button>
+            <!-- Static Permanent Registered Role Badge -->
+            <div class="user-role-badge ${roleBadgeClass}" title="Verified Account Role: ${roleBadgeText}">
+              <span>${roleBadgeIcon}</span>
+              <span class="badge-role-text">${roleBadgeText}</span>
             </div>
 
+            <!-- Shopping Cart Button with Live Counter Badge -->
+            <button type="button" class="nav-cart-btn" onclick="AgriNav.handleCartClick()" title="View Agricultural Cart">
+              <span>🛒</span>
+              <span class="cart-btn-label">Cart</span>
+              <span class="cart-badge" id="nav-cart-count" style="display: none;">0</span>
+            </button>
+
             <!-- Multilingual Indian Languages Switcher -->
-            <select id="langSelect" class="lang-select" onchange="AgriState.setLang(this.value)" title="Choose Language / भाषा चुनें">
+            <select id="langSelect" class="lang-select" onchange="AgriNav.handleLangChange(this.value)" title="Choose Language / भाषा चुनें">
               <option value="en">English</option>
               <option value="hi">हिंदी (Hindi)</option>
               <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
@@ -151,6 +205,149 @@ const AgriNav = {
 
     document.querySelector('.demo-journey-banner').insertAdjacentHTML('afterend', headerHtml);
     this.setupDropdownListeners();
+  },
+
+  handleCartClick() {
+    if (window.AgriCart && typeof window.AgriCart.openDrawer === 'function') {
+      window.AgriCart.openDrawer();
+    } else {
+      window.location.href = '/fertilizer-market';
+    }
+  },
+
+  handleLangChange(langCode) {
+    if (window.AgriState && typeof window.AgriState.setLang === 'function') {
+      window.AgriState.setLang(langCode);
+    }
+    if (window.AgriI18n && typeof window.AgriI18n.setLanguage === 'function') {
+      window.AgriI18n.setLanguage(langCode);
+    }
+  },
+
+  renderMobileDrawer() {
+    if (document.getElementById('mobileNavDrawer')) return;
+
+    const currentRole = window.AgriState.currentRole || 'FARMER';
+    const user = window.AgriState.currentUser || { name: 'Farmer User', role: currentRole };
+
+    let roleIcon = '👨‍🌾';
+    let roleText = 'Farmer';
+    if (currentRole === 'DEALER') { roleIcon = '🏪'; roleText = 'Input Dealer'; }
+    else if (currentRole === 'SERVICE_PROVIDER' || currentRole === 'TRANSPORTER') { roleIcon = '🚜'; roleText = 'Service Provider'; }
+
+    const drawerHtml = `
+      <div id="mobileNavBackdrop" class="mobile-nav-backdrop" onclick="AgriNav.closeMobileDrawer()"></div>
+      <aside id="mobileNavDrawer" class="mobile-nav-drawer">
+        <div class="mobile-drawer-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.4rem;">🌾</span>
+            <h3>AGRIWISE AI</h3>
+          </div>
+          <button type="button" class="mobile-drawer-close" onclick="AgriNav.closeMobileDrawer()">&times;</button>
+        </div>
+
+        <div class="mobile-drawer-user">
+          <div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${user.name}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">${roleIcon} Registered as ${roleText}</div>
+          </div>
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="AgriNav.handleCartClick(); AgriNav.closeMobileDrawer();" style="padding: 4px 8px; font-size: 0.8rem;">
+            🛒 Cart (<span class="cart-badge" style="position: static; display: inline-flex; font-size: 0.7rem; min-width: 16px; height: 16px;">0</span>)
+          </button>
+        </div>
+
+        <nav class="mobile-drawer-links">
+          <a href="/dashboard" class="mobile-drawer-link" data-route="dashboard">
+            <span>🌾</span> <span>Farm Dashboard</span>
+          </a>
+          <a href="/crop-recommendation" class="mobile-drawer-link" data-route="crop-recommendation">
+            <span>🌱</span> <span>Crops & Recommendations</span>
+          </a>
+          <a href="/fertilizer-market" class="mobile-drawer-link" data-route="fertilizer-market">
+            <span>🛒</span> <span>Inputs & Fertilizer Market</span>
+          </a>
+          <a href="/transport-marketplace" class="mobile-drawer-link" data-route="transport-marketplace">
+            <span>🚜</span> <span>Services & Machinery Fleet</span>
+          </a>
+          <a href="/market-intelligence" class="mobile-drawer-link" data-route="market-intelligence">
+            <span>💹</span> <span>Market & Live Mandi Prices</span>
+          </a>
+          <a href="/farmer-orders" class="mobile-drawer-link" data-route="farmer-orders">
+            <span>📦</span> <span>My Orders & Bookings</span>
+          </a>
+          <a href="/farm-profile" class="mobile-drawer-link" data-route="farm-profile">
+            <span>👤</span> <span>Farm Profile & Land GPS</span>
+          </a>
+          <a href="/farm-analysis" class="mobile-drawer-link" data-route="farm-analysis">
+            <span>🔬</span> <span>Soil & Water Health Score</span>
+          </a>
+          <a href="/crop-shortage" class="mobile-drawer-link" data-route="crop-shortage">
+            <span>🗺</span> <span>Crop Shortage & Deficit Map</span>
+          </a>
+          <a href="/payment" class="mobile-drawer-link" data-route="payment">
+            <span>💳</span> <span>Payments & KCC Wallet</span>
+          </a>
+          <a href="/ai-assistant" class="mobile-drawer-link" data-route="ai-assistant">
+            <span>🤖</span> <span>AI Agronomist Advisor</span>
+          </a>
+          <a href="/weather" class="mobile-drawer-link" data-route="weather">
+            <span>⛅</span> <span>Weather Forecast & Alerts</span>
+          </a>
+          <a href="/notifications" class="mobile-drawer-link" data-route="notifications">
+            <span>🔔</span> <span>Notifications</span>
+          </a>
+
+          <div style="height: 1px; background: var(--border-light); margin: 0.75rem 1rem;"></div>
+
+          <div style="padding: 0.5rem 1.25rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Choose Language / भाषा:</label>
+            <select class="lang-select" style="width: 100%;" onchange="AgriNav.handleLangChange(this.value)">
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+              <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+              <option value="mr">मराठी (Marathi)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
+              <option value="gu">ગુજરાતી (Gujarati)</option>
+              <option value="bn">বাংলা (Bengali)</option>
+              <option value="kn">ಕನ್ನಡ (Kannada)</option>
+            </select>
+          </div>
+
+          <div style="padding: 0.75rem 1.25rem;">
+            <button type="button" class="btn btn-secondary btn-block btn-sm" onclick="AgriState.logout()" style="color: #dc2626;">
+              🚪 Sign Out
+            </button>
+          </div>
+        </nav>
+      </aside>
+    `;
+    document.body.insertAdjacentHTML('beforeend', drawerHtml);
+  },
+
+  toggleMobileDrawer() {
+    const drawer = document.getElementById('mobileNavDrawer');
+    const backdrop = document.getElementById('mobileNavBackdrop');
+    if (drawer && backdrop) {
+      const isOpen = drawer.classList.contains('active');
+      if (isOpen) {
+        this.closeMobileDrawer();
+      } else {
+        drawer.classList.add('active');
+        backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+  },
+
+  closeMobileDrawer() {
+    const drawer = document.getElementById('mobileNavDrawer');
+    const backdrop = document.getElementById('mobileNavBackdrop');
+    if (drawer && backdrop) {
+      drawer.classList.remove('active');
+      backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    }
   },
 
   renderUserAuthNav() {
@@ -240,28 +437,35 @@ const AgriNav = {
   },
 
   renderMobileBottomNav() {
+    const currentRole = window.AgriState.currentRole || 'FARMER';
+    const isDealer = currentRole === 'DEALER';
+    const isProvider = currentRole === 'SERVICE_PROVIDER' || currentRole === 'TRANSPORTER';
+
+    const homeRoute = isDealer ? '/dealer-dashboard' : isProvider ? '/transport-dashboard' : '/dashboard';
+    const homeLabel = isDealer ? 'Dealer' : isProvider ? 'Fleet' : 'Home';
+
     const mobileNavHtml = `
       <div class="mobile-bottom-nav">
-        <a href="/dashboard" class="mobile-nav-item" data-route="dashboard">
+        <a href="${homeRoute}" class="mobile-nav-item" data-route="${homeRoute.replace('/', '')}">
           <span class="mobile-nav-icon">🌾</span>
-          <span>Home</span>
+          <span>${homeLabel}</span>
         </a>
         <a href="/crop-recommendation" class="mobile-nav-item" data-route="crop-recommendation">
           <span class="mobile-nav-icon">🌱</span>
           <span>Crops</span>
         </a>
-        <a href="/weather" class="mobile-nav-item" data-route="weather">
-          <span class="mobile-nav-icon">⛅</span>
-          <span>Weather</span>
+        <a href="/fertilizer-market" class="mobile-nav-item" data-route="fertilizer-market">
+          <span class="mobile-nav-icon">🛒</span>
+          <span>Inputs</span>
         </a>
-        <a href="/market-intelligence" class="mobile-nav-item" data-route="market-intelligence">
-          <span class="mobile-nav-icon">💹</span>
-          <span>Mandi</span>
+        <a href="/farmer-orders" class="mobile-nav-item" data-route="farmer-orders">
+          <span class="mobile-nav-icon">📦</span>
+          <span>Orders</span>
         </a>
-        <a href="/ai-assistant" class="mobile-nav-item" data-route="ai-assistant">
-          <span class="mobile-nav-icon">🤖</span>
-          <span>AI Help</span>
-        </a>
+        <button type="button" class="mobile-nav-item" style="background: none; border: none; cursor: pointer; width: 100%;" onclick="AgriNav.toggleMobileDrawer()">
+          <span class="mobile-nav-icon">☰</span>
+          <span>Menu</span>
+        </button>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', mobileNavHtml);

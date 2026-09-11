@@ -66,21 +66,38 @@
 
     async function loadOrders() {
       try {
-        const orders = await AgriAPI.getOrders();
+        const userId = window.AgriState && window.AgriState.currentUser ? window.AgriState.currentUser.id : null;
+        const orders = await AgriAPI.getOrders(userId ? { user_id: userId } : {});
         const tbody = document.getElementById('ordersTableBody');
         if (orders && orders.length > 0) {
           tbody.innerHTML = orders.map(o => {
             const isPaid = o.status === 'COMPLETED' || o.status === 'PAID';
             const payType = o.order_type === 'TRANSPORT' ? 'transport' : (o.order_type === 'BUYER_OFFER' ? 'escrow' : 'fertilizer');
+            
+            let itemDisplay = o.item_title;
+            if (o.items_json) {
+              try {
+                const parsed = JSON.parse(o.items_json);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  itemDisplay = parsed.map(p => `${p.name} (x${p.quantity})`).join(', ');
+                }
+              } catch (e) {}
+            }
+
+            const formattedMoney = window.AgriCharts ? window.AgriCharts.formatMoney(o.amount_inr) : `₹${Number(o.amount_inr || 0).toLocaleString('en-IN')}`;
+
             return `
             <tr>
-              <td><strong>#ORD-00${o.id}</strong></td>
+              <td><strong>#ORD-${o.id}</strong></td>
               <td><span class="badge ${o.order_type === 'INPUT' ? 'badge-emerald' : (o.order_type === 'TRANSPORT' ? 'badge-blue' : 'badge-amber')}">${o.order_type}</span></td>
-              <td><strong>${o.item_title}</strong></td>
+              <td>
+                <strong>${itemDisplay}</strong>
+                ${o.delivery_address ? `<div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">📍 ${o.delivery_address}</div>` : ''}
+              </td>
               <td>${o.partner_name}</td>
-              <td>${o.quantity}</td>
-              <td style="font-weight: 800; color: var(--primary-900);">₹${o.amount_inr.toLocaleString('en-IN')}</td>
-              <td><span class="badge ${isPaid ? 'badge-emerald' : 'badge-amber'}">${o.status}</span></td>
+              <td>${o.quantity || '1 Order'}</td>
+              <td style="font-weight: 800; color: var(--primary-900);">${formattedMoney}</td>
+              <td><span class="badge ${isPaid ? 'badge-emerald' : o.status === 'DISPATCHED' ? 'badge-blue' : 'badge-amber'}">${o.status}</span></td>
               <td style="font-size: 0.82rem; color: var(--text-muted);">${o.created_at}</td>
               <td>
                 ${isPaid ? 

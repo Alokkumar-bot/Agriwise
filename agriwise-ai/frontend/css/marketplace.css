@@ -159,13 +159,25 @@
 }
 
 .product-image-container {
-  height: 180px;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  height: 190px;
+  background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+}
+
+.product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+  display: block;
+}
+
+.product-card:hover .product-img {
+  transform: scale(1.06);
 }
 
 .product-image-icon {

@@ -145,6 +145,37 @@
               </div>
             </div>
           </div>
+      <!-- Incoming Customer Orders & Dispatch Management -->
+      <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">📋</span>
+            <span>Incoming Farmer Orders & Doorstep Fulfillment</span>
+          </div>
+          <span class="badge badge-emerald">Live DB Sync</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Farmer Name</th>
+                <th>Items Ordered</th>
+                <th>Delivery Address</th>
+                <th>Total Value</th>
+                <th>Order Status</th>
+                <th>Update Status</th>
+              </tr>
+            </thead>
+            <tbody id="dealerOrdersTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                  Loading farmer orders...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -155,6 +186,69 @@
   <script src="/js/i18n.js"></script>
   <script src="/js/navigation.js"></script>
   <script>
+    document.addEventListener('DOMContentLoaded', loadDealerOrders);
+
+    async function loadDealerOrders() {
+      const tbody = document.getElementById('dealerOrdersTableBody');
+      try {
+        const orders = await AgriAPI.getOrders();
+        if (!orders || orders.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No orders placed yet. Orders from farmers will appear here.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = orders.map(o => {
+          let itemsDesc = o.item_title;
+          if (o.items_json) {
+            try {
+              const parsed = JSON.parse(o.items_json);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                itemsDesc = parsed.map(p => `${p.name} (x${p.quantity})`).join(', ');
+              }
+            } catch (err) {}
+          }
+
+          const statusBadge = o.status === 'COMPLETED' ? 'badge-emerald' :
+                              o.status === 'DISPATCHED' ? 'badge-blue' :
+                              o.status === 'CONFIRMED' ? 'badge-amber' : 'badge-primary';
+
+          const formattedAmount = window.AgriCharts ? window.AgriCharts.formatMoney(o.amount_inr) : `₹${Number(o.amount_inr || 0).toLocaleString('en-IN')}`;
+
+          return `
+            <tr>
+              <td><strong>#ORD-${o.id}</strong></td>
+              <td>👨‍🌾 Gurpreet Singh</td>
+              <td><span title="${itemsDesc}" style="max-width: 250px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${itemsDesc}</span></td>
+              <td>📍 ${o.delivery_address || 'Sahnewal, Ludhiana'}</td>
+              <td style="font-weight: 800; color: var(--primary-900);">${formattedAmount}</td>
+              <td><span class="badge ${statusBadge}">${o.status}</span></td>
+              <td>
+                <select class="form-control" style="padding: 4px 8px; font-size: 0.8rem; width: auto; display: inline-block;" onchange="updateDealerOrderStatus(${o.id}, this.value)">
+                  <option value="ORDERED" ${o.status === 'ORDERED' ? 'selected' : ''}>ORDERED</option>
+                  <option value="CONFIRMED" ${o.status === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
+                  <option value="DISPATCHED" ${o.status === 'DISPATCHED' ? 'selected' : ''}>DISPATCHED</option>
+                  <option value="COMPLETED" ${o.status === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading dealer orders:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Could not load orders.</td></tr>`;
+      }
+    }
+
+    async function updateDealerOrderStatus(orderId, status) {
+      try {
+        await AgriAPI.updateOrderStatus(orderId, status);
+        alert(`Order #ORD-${orderId} status updated to ${status}!`);
+        loadDealerOrders();
+      } catch (err) {
+        alert('Failed to update status: ' + err.message);
+      }
+    }
+
     function addNewProductPrompt() {
       const name = prompt("Enter Agricultural Input Product Name:", "NPK 19:19:19 Foliar (1kg)");
       if (name) {

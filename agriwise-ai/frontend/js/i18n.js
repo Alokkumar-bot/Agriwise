@@ -503,57 +503,77 @@ const AgriI18n = {
 
     // 2. Translate Navigation Links across any header / drawer
     const navMapping = {
-      'dashboard': t.nav_dashboard || t.dashboard,
-      'farm-analysis': t.nav_soil_water || t.farm_analysis,
-      'crop-recommendation': t.nav_crops || t.crop_recommendation,
-      'fertilizer-market': t.nav_inputs || t.fertilizer_market,
-      'market-intelligence': t.nav_markets || t.market_intel,
-      'crop-shortage': t.nav_shortages || t.crop_shortage,
-      'farm-to-market': t.nav_farm_to_market || t.farm_to_market,
-      'payment': t.nav_payments || t.payment_gateway,
-      'ai-assistant': t.nav_ai_advisor || t.ai_assistant,
-      'dealer-dashboard': t.dashboard,
-      'transport-dashboard': t.dashboard,
-      'buyer-dashboard': t.dashboard,
-      'admin': t.admin
+      'dashboard': t.nav_dashboard || t.dashboard || '🌾 Dashboard',
+      'farm-analysis': t.nav_soil_water || t.farm_analysis || '🔬 Soil & Water',
+      'crop-recommendation': t.nav_crops || t.crop_recommendation || '🌱 Crops',
+      'fertilizer-market': t.nav_inputs || t.fertilizer_market || '🛒 Inputs',
+      'transport-marketplace': t.services || t.transport_market || '🚜 Services',
+      'market-intelligence': t.nav_markets || t.market_intel || '💹 Markets',
+      'crop-shortage': t.nav_shortages || t.crop_shortage || '🗺 Shortages',
+      'farm-to-market': t.nav_farm_to_market || t.farm_to_market || '🚜 Farm-to-Market',
+      'payment': t.nav_payments || t.payment_gateway || '💳 Payments',
+      'ai-assistant': t.nav_ai_advisor || t.ai_assistant || '🤖 AI Advisor',
+      'farmer-orders': t.my_orders || '📦 Orders',
+      'farm-profile': t.farm_profile || '👤 Profile',
+      'weather': t.weather || '⛅ Weather',
+      'notifications': t.notifications || '🔔 Notifications',
+      'dealer-dashboard': t.dashboard || '📊 Dealer Overview',
+      'transport-dashboard': t.dashboard || '🚜 Fleet Overview',
+      'buyer-dashboard': t.dashboard || '🏢 Procurement',
+      'admin': t.admin || '⚙ Admin'
     };
 
-    document.querySelectorAll('.nav-link, .mobile-nav-item').forEach(link => {
+    document.querySelectorAll('.nav-link, .mobile-nav-item, .mobile-drawer-link').forEach(link => {
       const route = link.getAttribute('data-route');
       if (route && navMapping[route]) {
         if (link.classList.contains('mobile-nav-item')) {
           const span = link.querySelector('span:last-child');
-          if (span) span.innerText = (t[route] || navMapping[route]).replace(/[^\w\s\u0900-\u0D7F]/gi, '').trim();
+          if (span) span.innerText = (navMapping[route]).replace(/[^\w\s\u0900-\u0D7F]/gi, '').trim();
+        } else if (link.classList.contains('mobile-drawer-link')) {
+          const spans = link.querySelectorAll('span');
+          if (spans.length >= 2) {
+            spans[1].innerText = navMapping[route].replace(/^[^\w\s\u0900-\u0D7F]+\s*/, '');
+          }
         } else {
           link.innerHTML = navMapping[route];
         }
       }
     });
 
-    // 3. Update all Language Selectors on page
+    // 3. Update Cart Button Label
+    document.querySelectorAll('.nav-cart-btn .cart-btn-label').forEach(label => {
+      label.innerText = t.cart || 'Cart';
+    });
+
+    // 4. Update Role Badges
+    document.querySelectorAll('.user-role-badge').forEach(badge => {
+      const textSpan = badge.querySelector('.badge-role-text');
+      if (textSpan) {
+        if (badge.classList.contains('badge-role-farmer') && t.role_farmer) {
+          textSpan.innerText = t.role_farmer.replace(/\s*\(.*\)/, '');
+        } else if (badge.classList.contains('badge-role-dealer') && t.role_dealer) {
+          textSpan.innerText = t.role_dealer;
+        } else if (badge.classList.contains('badge-role-provider') && t.role_provider) {
+          textSpan.innerText = t.role_provider;
+        } else if (badge.classList.contains('badge-role-buyer') && t.role_buyer) {
+          textSpan.innerText = t.role_buyer;
+        } else if (badge.classList.contains('badge-role-admin') && t.role_admin) {
+          textSpan.innerText = t.role_admin;
+        }
+      }
+    });
+
+    // 5. Update all Language Selectors on page
     document.querySelectorAll('select.lang-select, #langSelect, #loginLangSelect, #regLangSelect').forEach(select => {
       select.value = this.currentLang;
     });
 
-    // 4. Update Role Pills
-    const rolePills = document.querySelectorAll('.role-pill, .role-chip-btn');
-    rolePills.forEach(pill => {
-      const r = (pill.getAttribute('data-role') || pill.innerText).toUpperCase();
-      if (r.includes('FARMER') && t.role_farmer) {
-        pill.innerHTML = `<span>👨‍🌾</span> <span>${t.role_farmer}</span>`;
-      } else if (r.includes('DEALER') && t.role_dealer) {
-        pill.innerHTML = `<span>🏪</span> <span>${t.role_dealer}</span>`;
-      } else if (r.includes('TRANSPORT') && t.role_transporter) {
-        pill.innerHTML = `<span>🚛</span> <span>${t.role_transporter}</span>`;
-      } else if (r.includes('BUYER') && t.role_buyer) {
-        pill.innerHTML = `<span>🏢</span> <span>${t.role_buyer}</span>`;
-      } else if (r.includes('ADMIN') && t.role_admin) {
-        pill.innerHTML = `<span>⚙️</span> <span>${t.role_admin}</span>`;
-      }
-    });
-
-    // 5. Broadcast Language Changed Event
+    // 6. Broadcast Language Changed Event
     window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang: this.currentLang, translations: t } }));
+  },
+
+  async setLanguage(lang) {
+    await this.switchLanguage(lang);
   },
 
   async switchLanguage(lang) {

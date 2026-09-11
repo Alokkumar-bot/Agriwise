@@ -43,6 +43,23 @@ const AgriAPI = {
     }
   },
 
+  async patch(endpoint, data = {}) {
+    try {
+      const res = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn(`API PATCH failed for ${endpoint}:`, err);
+      throw err;
+    }
+  },
+
   // Authentication API
   login(credentials) {
     return this.post('/api/auth/login', credentials);
@@ -125,12 +142,16 @@ const AgriAPI = {
     return this.post('/api/assistant/chat', { message });
   },
 
-  getOrders() {
-    return this.get('/api/orders');
+  getOrders(params = {}) {
+    return this.get('/api/orders', params);
   },
 
   createOrder(orderData) {
     return this.post('/api/orders', orderData);
+  },
+
+  updateOrderStatus(orderId, status) {
+    return this.patch(`/api/orders/${orderId}/status`, { status });
   },
 
   getNotifications() {
