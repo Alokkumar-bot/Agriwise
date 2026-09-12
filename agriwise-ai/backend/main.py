@@ -11,9 +11,13 @@ if hasattr(sys.stdout, 'reconfigure'):
 import json
 import random
 import re
+import hmac
+import hashlib
+import base64
+import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, Depends, HTTPException, Query, Body
+from fastapi import FastAPI, Depends, HTTPException, Query, Body, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -77,6 +81,81 @@ def health_check():
 # In-memory OTP storage with expiration
 OTP_CACHE: Dict[str, Dict[str, Any]] = {}
 
+# ==========================================
+# 0. JWT Cryptographic Engine (RFC 7519 HS256)
+# ==========================================
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "agriwise-bharat-krishi-jwt-secret-key-2026-secure")
+
+def b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+
+def b64url_decode(s: str) -> bytes:
+    padding = '=' * (-len(s) % 4)
+    return base64.urlsafe_b64decode(s + padding)
+
+def create_jwt_token(payload: dict, exp_hours: int = 72) -> str:
+    header = {"alg": "HS256", "typ": "JWT"}
+    p = payload.copy()
+    now = int(time.time())
+    p.setdefault("iat", now)
+    p.setdefault("exp", now + (exp_hours * 3600))
+    p.setdefault("iss", "https://agriwise.ai")
+    
+    h_b64 = b64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
+    p_b64 = b64url_encode(json.dumps(p, separators=(',', ':')).encode('utf-8'))
+    to_sign = f"{h_b64}.{p_b64}".encode('utf-8')
+    sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), to_sign, hashlib.sha256).digest()
+    sig_b64 = b64url_encode(sig)
+    return f"{h_b64}.{p_b64}.{sig_b64}"
+
+def verify_jwt_token(token: str) -> dict:
+    parts = token.strip().split('.')
+    if len(parts) != 3:
+        raise ValueError("Invalid JWT token structure. Expected header.payload.signature")
+    h_b64, p_b64, sig_b64 = parts
+    to_sign = f"{h_b64}.{p_b64}".encode('utf-8')
+    expected_sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), to_sign, hashlib.sha256).digest()
+    if not hmac.compare_digest(b64url_encode(expected_sig), sig_b64):
+        raise ValueError("Cryptographic JWT signature verification failed")
+    
+    payload = json.loads(b64url_decode(p_b64).decode('utf-8'))
+    if payload.get("exp", 0) < int(time.time()):
+        raise ValueError("JWT token has expired")
+    return payload
+
+def decode_jwt_token(token: str) -> dict:
+    parts = token.strip().split('.')
+    if len(parts) != 3:
+        return {"valid": False, "error": "Invalid token format (expected 3 parts: header.payload.signature)"}
+    h_b64, p_b64, sig_b64 = parts
+    try:
+        header = json.loads(b64url_decode(h_b64).decode('utf-8'))
+        payload = json.loads(b64url_decode(p_b64).decode('utf-8'))
+    except Exception as e:
+        return {"valid": False, "error": f"Base64 decoding failed: {e}"}
+    
+    to_sign = f"{h_b64}.{p_b64}".encode('utf-8')
+    expected_sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), to_sign, hashlib.sha256).digest()
+    sig_valid = hmac.compare_digest(b64url_encode(expected_sig), sig_b64)
+    now = int(time.time())
+    is_expired = payload.get("exp", 0) < now if "exp" in payload else False
+    
+    exp_str = datetime.fromtimestamp(payload["exp"]).strftime("%d %b %Y, %I:%M:%S %p") if "exp" in payload else "Never"
+    iat_str = datetime.fromtimestamp(payload["iat"]).strftime("%d %b %Y, %I:%M:%S %p") if "iat" in payload else "N/A"
+    
+    return {
+        "valid": sig_valid and not is_expired,
+        "signature_valid": sig_valid,
+        "is_expired": is_expired,
+        "header": header,
+        "payload": payload,
+        "formatted": {
+            "issued_at": iat_str,
+            "expires_at": exp_str,
+            "time_remaining_seconds": max(0, payload.get("exp", 0) - now) if "exp" in payload else None
+        }
+    }
+
 def get_dashboard_redirect(role: str) -> str:
     role = (role or "FARMER").upper()
     if role == "DEALER":
@@ -90,9 +169,27 @@ def get_dashboard_redirect(role: str) -> str:
     return "/dashboard"
 
 @app.get("/api/auth/me")
-def get_current_user(role: Optional[str] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_current_user(
+    role: Optional[str] = None,
+    user_id: Optional[int] = None,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
     user = None
-    if user_id:
+    # 1. Inspect Authorization Bearer JWT header
+    if authorization and authorization.startswith("Bearer "):
+        tok = authorization.split(" ")[1].strip()
+        try:
+            claims = verify_jwt_token(tok)
+            sub = claims.get("sub")
+            if sub:
+                user = db.query(User).filter(User.id == sub).first()
+            if not user and claims.get("email"):
+                user = db.query(User).filter(User.email.ilike(claims["email"])).first()
+        except Exception:
+            pass
+
+    if not user and user_id:
         user = db.query(User).filter(User.id == user_id).first()
     if not user and role:
         target_role = role.upper()
@@ -104,7 +201,7 @@ def get_current_user(role: Optional[str] = None, user_id: Optional[int] = None, 
         user = db.query(User).first()
 
     farm = user.farms[0] if user and user.farms else None
-    return {
+    profile_data = {
         "id": user.id if user else 1,
         "name": user.name if user else "Gurpreet Singh",
         "email": user.email if user else "gurpreet.farmer@agriwise.ai",
@@ -123,6 +220,8 @@ def get_current_user(role: Optional[str] = None, user_id: Optional[int] = None, 
             "area_acres": farm.area_acres if farm else 5.0
         } if farm else None
     }
+    profile_data["user"] = profile_data.copy()
+    return profile_data
 
 @app.post("/api/auth/login")
 def login(payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -159,12 +258,20 @@ def login(payload: dict = Body(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="No matching user account found. Please register.")
 
     redirect_url = get_dashboard_redirect(user.role)
-    token = f"agriwise_tok_{user.role.lower()}_{user.id}_{int(datetime.utcnow().timestamp())}"
+    jwt_token = create_jwt_token({
+        "sub": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "auth_type": "password"
+    }, exp_hours=72)
 
     return {
         "success": True,
         "message": f"Welcome back, {user.name}!",
-        "token": token,
+        "token": jwt_token,
+        "access_token": jwt_token,
+        "token_type": "Bearer",
         "redirect_url": redirect_url,
         "user": {
             "id": user.id,
@@ -178,6 +285,152 @@ def login(payload: dict = Body(...), db: Session = Depends(get_db)):
             "farm_size_acres": user.farm_size_acres
         }
     }
+
+@app.post("/api/auth/google")
+def google_auth(payload: dict = Body(...), db: Session = Depends(get_db)):
+    credential = payload.get("credential") # Google ID Token JWT
+    email = (payload.get("email") or "").strip().lower()
+    name = (payload.get("name") or "").strip()
+    google_id = payload.get("google_id") or payload.get("sub") or ""
+    picture = payload.get("picture") or ""
+    requested_role = (payload.get("role") or "FARMER").strip().upper()
+
+    # If Google credential (ID Token JWT) was passed, parse claims
+    google_claims = {}
+    if credential:
+        try:
+            parts = credential.split(".")
+            if len(parts) == 3:
+                google_claims = json.loads(b64url_decode(parts[1]).decode("utf-8"))
+                email = (google_claims.get("email") or email).strip().lower()
+                name = google_claims.get("name") or name
+                picture = google_claims.get("picture") or picture
+                google_id = google_claims.get("sub") or google_id
+        except Exception:
+            pass
+
+    if not email and not google_id:
+        raise HTTPException(status_code=400, detail="Google authentication requires valid email or ID token.")
+
+    if not name:
+        name = email.split("@")[0].replace(".", " ").title() if email else "Google Farmer"
+
+    # Find existing user by email or phone
+    user = None
+    if email:
+        user = db.query(User).filter(User.email.ilike(email)).first()
+    if not user and google_id:
+        user = db.query(User).filter(User.phone == f"GGL-{google_id[:8]}").first()
+
+    # Auto-register if first time signing in with Google
+    if not user:
+        clean_phone = f"+91 9{random.randint(100000000, 999999999)}"
+        final_role = requested_role if requested_role in ["FARMER", "DEALER", "SERVICE_PROVIDER", "TRANSPORTER", "BUYER", "ADMIN"] else "FARMER"
+        user = User(
+            name=name,
+            email=email or f"google_{google_id[:8]}@agriwise.ai",
+            phone=clean_phone,
+            role=final_role,
+            state="Punjab",
+            district="Ludhiana",
+            village="Sahnewal",
+            farm_size_acres=5.0,
+            experience_years=8
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        if user.role == "FARMER":
+            default_farm = Farm(
+                user_id=user.id,
+                name=f"{name.split()[0]}'s Smart Farm",
+                location_name="Sahnewal, Ludhiana, Punjab",
+                latitude=30.9010,
+                longitude=75.8573,
+                area_acres=5.0,
+                current_crop="Maize",
+                current_season="Kharif"
+            )
+            db.add(default_farm)
+            db.commit()
+
+    jwt_claims = {
+        "sub": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "provider": "google",
+        "google_id": google_id,
+        "picture": picture
+    }
+    access_token = create_jwt_token(jwt_claims, exp_hours=72)
+    redirect_url = get_dashboard_redirect(user.role)
+
+    return {
+        "success": True,
+        "message": f"Welcome, {user.name}! Authenticated with Google successfully.",
+        "token": access_token,
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "auth_provider": "google",
+        "redirect_url": redirect_url,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "role": user.role,
+            "state": user.state,
+            "district": user.district,
+            "village": user.village,
+            "farm_size_acres": user.farm_size_acres,
+            "picture": picture
+        },
+        "jwt_claims": jwt_claims
+    }
+
+@app.post("/api/auth/jwt/verify")
+def verify_jwt_endpoint(
+    payload: dict = Body(...),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    token = payload.get("token")
+    if not token and authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token is required for verification.")
+
+    try:
+        claims = verify_jwt_token(token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    user_id = claims.get("sub")
+    user = db.query(User).filter(User.id == user_id).first() if user_id else None
+    if not user and claims.get("email"):
+        user = db.query(User).filter(User.email.ilike(claims["email"])).first()
+
+    return {
+        "valid": True,
+        "message": "Cryptographic JWT signature verified successfully",
+        "claims": claims,
+        "user": {
+            "id": user.id if user else user_id,
+            "name": user.name if user else claims.get("name", "User"),
+            "email": user.email if user else claims.get("email"),
+            "role": user.role if user else claims.get("role", "FARMER")
+        } if (user or user_id) else None
+    }
+
+@app.post("/api/auth/jwt/decode")
+def decode_jwt_endpoint(payload: dict = Body(...)):
+    token = payload.get("token") or ""
+    if not token:
+        raise HTTPException(status_code=400, detail="Token parameter is required.")
+    return decode_jwt_token(token)
 
 @app.post("/api/auth/send-otp")
 def send_otp(payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -232,12 +485,20 @@ def verify_otp(payload: dict = Body(...), db: Session = Depends(get_db)):
         user = db.query(User).first()
 
     redirect_url = get_dashboard_redirect(user.role)
-    token = f"agriwise_otp_tok_{user.role.lower()}_{user.id}_{int(datetime.utcnow().timestamp())}"
+    jwt_token = create_jwt_token({
+        "sub": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "auth_type": "otp"
+    }, exp_hours=72)
 
     return {
         "success": True,
         "message": f"Phone verified! Welcome back, {user.name}.",
-        "token": token,
+        "token": jwt_token,
+        "access_token": jwt_token,
+        "token_type": "Bearer",
         "redirect_url": redirect_url,
         "user": {
             "id": user.id,

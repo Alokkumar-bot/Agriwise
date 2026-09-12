@@ -81,7 +81,11 @@ const AgriI18n = {
       cancelled_rentals: "Cancelled Rentals",
       cancel_booking: "Cancel Booking",
       download_receipt: "Download Receipt",
-      contact_owner: "Contact Owner"
+      contact_owner: "Contact Owner",
+      continue_with_google: "Continue with Google",
+      sign_in_with_google: "Sign in with Google",
+      tab_jwt: "JWT & Identity",
+      or_continue_with: "OR SIGN IN WITH CREDENTIALS"
     },
     hi: {
       app_name: "एग्रीवाइज एआई",
@@ -153,7 +157,11 @@ const AgriI18n = {
       cancelled_rentals: "रद्द किराये",
       cancel_booking: "बुकिंग रद्द करें",
       download_receipt: "रसीद डाउनलोड करें",
-      contact_owner: "मालिक से संपर्क करें"
+      contact_owner: "मालिक से संपर्क करें",
+      continue_with_google: "गूगल के साथ जारी रखें",
+      sign_in_with_google: "गूगल से साइन इन करें",
+      tab_jwt: "JWT और पहचान",
+      or_continue_with: "या विवरण से साइन इन करें"
     },
     pa: {
       app_name: "ਐਗਰੀਵਾਈਜ਼ ਏਆਈ",

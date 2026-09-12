@@ -80,5 +80,9 @@
   "cancelled_rentals": "రద్దయిన అద్దెలు",
   "cancel_booking": "బుకింగ్ రద్దు చేయండి",
   "download_receipt": "రసీదు డౌన్‌లోడ్ చేయండి",
-  "contact_owner": "యజమానిని సంಪ್ರదించండి"
+  "contact_owner": "యజమానిని సంప్రదించండి",
+  "continue_with_google": "గూగుల్‌తో కొనసాగించండి",
+  "sign_in_with_google": "గూగుల్‌తో సైన్ ఇన్ చేయండి",
+  "tab_jwt": "JWT & గుర్తింపు",
+  "or_continue_with": "లేదా వివరాలతో సైన్ ఇన్ చేయండి"
 }

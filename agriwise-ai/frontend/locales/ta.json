@@ -80,5 +80,9 @@
   "cancelled_rentals": "ரத்து செய்யப்பட்டவை",
   "cancel_booking": "முன்பதிவை ரத்து செய்",
   "download_receipt": "ரசீது பதிவிறக்கம் செய்",
-  "contact_owner": "உரிமையாளரை அழைக்க"
+  "contact_owner": "உரிமையாளரை அழைக்க",
+  "continue_with_google": "கூகிள் மூலம் தொடரவும்",
+  "sign_in_with_google": "கூகிள் மூலம் உள்நுழைக",
+  "tab_jwt": "JWT & அடையாளம்",
+  "or_continue_with": "அல்லது விவரங்களுடன் உள்நுழைக"
 }

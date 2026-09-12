@@ -80,5 +80,9 @@
   "cancelled_rentals": "रद्द केलेले",
   "cancel_booking": "बुकिंग रद्द करा",
   "download_receipt": "पावती डाउनलोड करा",
-  "contact_owner": "मालकाशी संपर्क साधा"
+  "contact_owner": "मालकाशी संपर्क साधा",
+  "continue_with_google": "गुगलसह सुरू ठेवा",
+  "sign_in_with_google": "गुगलने साइन इन करा",
+  "tab_jwt": "JWT आणि ओळख",
+  "or_continue_with": "किंवा माहितीसह साइन इन करा"
 }

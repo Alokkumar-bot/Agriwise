@@ -80,5 +80,9 @@
   "cancelled_rentals": "ਰੱਦ ਕੀਤੇ ਕਿਰਾਏ",
   "cancel_booking": "ਬੁਕਿੰਗ ਰੱਦ ਕਰੋ",
   "download_receipt": "ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ",
-  "contact_owner": "ਮਾਲਕ ਨਾਲ ਸੰਪਰਕ ਕਰੋ"
+  "contact_owner": "ਮਾਲਕ ਨਾਲ ਸੰਪਰਕ ਕਰੋ",
+  "continue_with_google": "ਗੂਗਲ ਨਾਲ ਜਾਰੀ ਰੱਖੋ",
+  "sign_in_with_google": "ਗੂਗਲ ਨਾਲ ਸਾਈਨ ਇਨ ਕਰੋ",
+  "tab_jwt": "JWT ਅਤੇ ਪਛਾਣ",
+  "or_continue_with": "ਜਾਂ ਵੇਰਵਿਆਂ ਨਾਲ ਸਾਈਨ ਇਨ ਕਰੋ"
 }

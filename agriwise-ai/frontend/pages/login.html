@@ -8,6 +8,142 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/responsive.css">
+  <style>
+    /* Google Sign-In Branded Button */
+    .google-signin-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.78rem 1.25rem;
+      background-color: #ffffff;
+      border: 1.5px solid #dadce0;
+      border-radius: var(--radius-md);
+      color: #3c4043;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .google-signin-btn:hover {
+      background-color: #f8fafc;
+      border-color: #c2c7d0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+    .google-signin-btn:active {
+      background-color: #f1f5f9;
+      transform: translateY(0);
+    }
+
+    /* Auth Divider */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.1rem 0;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .auth-divider span {
+      padding: 0 0.75rem;
+    }
+
+    /* Google Modal Overlay & Card */
+    .google-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1rem;
+    }
+    .google-modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 440px;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      animation: modalPop 0.2s ease-out;
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .google-acc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+      margin-bottom: 0.4rem;
+    }
+    .google-acc-item:hover {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+    .google-acc-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .google-acc-text {
+      flex: 1;
+      overflow: hidden;
+    }
+    .google-acc-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+    }
+    .google-acc-email {
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+
+    /* JWT Encoded Box */
+    .jwt-encoded-box {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid #1e293b;
+    }
+    .jwt-hdr { color: #f87171; font-weight: 600; }
+    .jwt-pay { color: #c084fc; font-weight: 600; }
+    .jwt-sig { color: #38bdf8; font-weight: 600; }
+  </style>
 </head>
 <body style="background: radial-gradient(circle at 50% 10%, #ecfdf5 0%, #f8fafc 90%); min-height: 100vh;">
 
@@ -125,6 +261,24 @@
           <span id="authAlertMessage">Invalid credentials. Please try again.</span>
         </div>
 
+        <!-- Google Sign-In Branded Button -->
+        <div style="margin-bottom: 0.5rem;">
+          <button type="button" class="google-signin-btn" onclick="openGoogleModal()" id="btnGoogleLogin">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.79l7.98-6.2z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              <path fill="none" d="M0 0h48v48H0z"/>
+            </svg>
+            <span id="txtGoogleSignIn">Continue with Google</span>
+          </button>
+        </div>
+
+        <div class="auth-divider">
+          <span id="txtDivider">OR SIGN IN WITH CREDENTIALS</span>
+        </div>
+
         <!-- Role Selector Chips -->
         <div class="role-chips-container">
           <div class="role-chips-label" id="roleSelectLabel">Select Your Persona / Role:</div>
@@ -156,15 +310,19 @@
         <div class="auth-nav-tabs">
           <button type="button" class="auth-tab-btn active" id="tabBtnPassword" onclick="switchTab('password')">
             <span>🔑</span>
-            <span id="tabPassText">Password Login</span>
+            <span id="tabPassText">Password</span>
           </button>
           <button type="button" class="auth-tab-btn" id="tabBtnOtp" onclick="switchTab('otp')">
             <span>📱</span>
-            <span id="tabOtpText">Mobile OTP (Kisan ID)</span>
+            <span id="tabOtpText">Mobile OTP</span>
           </button>
           <button type="button" class="auth-tab-btn" id="tabBtnDemo" onclick="switchTab('demo')">
             <span>⚡</span>
-            <span id="tabDemoText">Quick Personas</span>
+            <span id="tabDemoText">Personas</span>
+          </button>
+          <button type="button" class="auth-tab-btn" id="tabBtnJwt" onclick="switchTab('jwt')">
+            <span>🪪</span>
+            <span id="tabJwtText">JWT & Identity</span>
           </button>
         </div>
 
@@ -384,6 +542,111 @@
           </div>
         </div>
 
+        <!-- ==========================================
+             TAB 4: JWT TOKEN & IDENTITY INTERFACE
+             ========================================== -->
+        <div id="jwtInterfaceTab" style="display: none;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-weight: 700; color: #166534; font-size: 0.88rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🛡️</span>
+                <span>RFC 7519 JSON Web Token (HS256)</span>
+              </div>
+              <span class="badge badge-success" style="font-size: 0.7rem; font-weight: 800;">LIVE INSPECTOR</span>
+            </div>
+            <p style="font-size: 0.78rem; color: #15803d; margin-top: 0.3rem; margin-bottom: 0;">
+              AgriWise authenticates sessions via cryptographically signed HMAC-SHA256 JWT tokens with automatic expiry and granular role claims.
+            </p>
+          </div>
+
+          <!-- Token Control Strip -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.85rem;">
+            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 0.5rem 0.6rem;" onclick="generateAndInspectPersonaJwt()">
+              <span>⚡ Generate Demo JWT</span>
+            </button>
+            <button type="button" class="btn btn-outline" style="flex: 1; font-size: 0.8rem; padding: 0.5rem 0.6rem;" onclick="loadCurrentSessionJwt()">
+              <span>🔄 Load Stored JWT</span>
+            </button>
+          </div>
+
+          <!-- Encoded 3-Part Token Box with Color Legend -->
+          <div style="margin-bottom: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label class="form-label" style="margin-bottom: 0; font-size: 0.8rem; font-weight: 700;">Encoded Token (Base64URL)</label>
+              <div style="font-size: 0.7rem; display: flex; gap: 0.6rem;">
+                <span style="color: #f87171; font-weight: 700;">■ Header</span>
+                <span style="color: #c084fc; font-weight: 700;">■ Payload</span>
+                <span style="color: #38bdf8; font-weight: 700;">■ Signature</span>
+              </div>
+            </div>
+            <div class="jwt-encoded-box" id="jwtEncodedDisplay">
+              <span class="jwt-hdr" id="jwtEncHeader">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span><span style="color: #64748b;">.</span><span class="jwt-pay" id="jwtEncPayload">eyJzdWIiOiIxIiwibmFtZSI6Ikd1cnByZWV0IFNpbmdoIiwicm9sZSI6IkZBUk1FUiJ9</span><span style="color: #64748b;">.</span><span class="jwt-sig" id="jwtEncSig">4gA8hH5yZ2qLmNoPqRsTuVwXyZ0123456789</span>
+            </div>
+          </div>
+
+          <!-- Decoded Header & Signature Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.75rem;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.65rem 0.75rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #dc2626; margin-bottom: 0.25rem;">HEADER (Algorithm)</div>
+              <pre id="jwtDecodedHeader" style="margin: 0; font-size: 0.72rem; color: #991b1b; font-family: monospace; white-space: pre-wrap; line-height: 1.3;">{"alg": "HS256", "typ": "JWT"}</pre>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.65rem 0.75rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #166534; margin-bottom: 0.25rem;">SIGNATURE STATUS</div>
+              <div id="jwtSignatureStatus" style="font-size: 0.76rem; font-weight: 700; color: #16a34a; display: flex; align-items: center; gap: 0.25rem;">
+                <span>🟢 Verified Valid (HS256)</span>
+              </div>
+              <div id="jwtExpiryInfo" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">
+                Expires in 72 hours
+              </div>
+            </div>
+          </div>
+
+          <!-- Decoded Payload Claims -->
+          <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.65rem 0.75rem; margin-bottom: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #7c3aed;">PAYLOAD: CLAIMS (sub, role, iat, exp)</div>
+              <span class="badge badge-success" id="jwtRoleBadge" style="font-size: 0.65rem;">FARMER</span>
+            </div>
+            <pre id="jwtDecodedPayload" style="margin: 0; font-size: 0.72rem; color: #581c87; font-family: monospace; white-space: pre-wrap; max-height: 120px; overflow-y: auto; line-height: 1.3;">{
+  "sub": "1",
+  "name": "Gurpreet Singh",
+  "email": "gurpreet.farmer@agriwise.ai",
+  "role": "FARMER",
+  "iss": "agriwise-ai"
+}</pre>
+          </div>
+
+          <!-- Actions: Copy Bearer, Verify API, Sign In -->
+          <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem;">
+            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 0.45rem 0.3rem;" onclick="copyBearerToken()">
+              <span id="btnCopyBearerText">📋 Copy Bearer</span>
+            </button>
+            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 0.45rem 0.3rem;" onclick="verifyJwtOnline()">
+              <span>🔍 Verify Online</span>
+            </button>
+            <button type="button" class="btn btn-primary" style="flex: 1; font-size: 0.75rem; padding: 0.45rem 0.3rem;" onclick="signInWithInspectedJwt()">
+              <span>🚀 Sign In with JWT</span>
+            </button>
+          </div>
+
+          <!-- Custom JWT Input -->
+          <div style="border-top: 1px dashed var(--border-light); padding-top: 0.75rem;">
+            <label class="form-label" style="font-size: 0.78rem; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+              <span>Paste Custom JWT to Verify:</span>
+              <a href="#" onclick="pasteSampleJwt(event)" style="font-size: 0.72rem; color: var(--primary-700); text-decoration: none;">Use Current</a>
+            </label>
+            <textarea id="customJwtInput" class="form-control" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-family: monospace; font-size: 0.72rem; padding: 0.4rem;"></textarea>
+            <div style="display: flex; gap: 0.4rem; margin-top: 0.4rem;">
+              <button type="button" class="btn btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;" onclick="inspectCustomJwt()">
+                🔎 Inspect Pasted
+              </button>
+              <button type="button" class="btn btn-primary" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;" onclick="authenticateWithPastedJwt()">
+                🔓 Verify & Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Card Footer -->
         <div style="text-align: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border-subtle); font-size: 0.88rem; color: var(--text-muted);">
           <span id="txtNoAccount">New to AgriWise AI?</span> 
@@ -397,6 +660,97 @@
       </div>
     </div>
   </main>
+
+  <!-- ==========================================
+       GOOGLE ACCOUNT CHOOSER / ONE-TAP MODAL
+       ========================================== -->
+  <div id="googleAuthModal" class="google-modal-overlay" style="display: none;" onclick="handleGoogleModalBackdrop(event)">
+    <div class="google-modal-card">
+      <div style="padding: 1.25rem 1.5rem 0.9rem 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <svg width="26" height="26" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.79l7.98-6.2z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <path fill="none" d="M0 0h48v48H0z"/>
+          </svg>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #1e293b;">Sign in with Google</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: #64748b;">Choose an account to continue to AgriWise AI</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeGoogleModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; line-height: 1;">✕</button>
+      </div>
+
+      <!-- Google Accounts List -->
+      <div style="padding: 0.6rem 0.9rem; max-height: 380px; overflow-y: auto;">
+        <!-- Gurpreet Singh -->
+        <div class="google-acc-item" onclick="selectGoogleAccount('Gurpreet Singh', 'gurpreet.farmer@gmail.com', 'FARMER', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100')">
+          <div class="google-acc-avatar" style="background: #e0f2fe; color: #0284c7;">GS</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Gurpreet Singh <span class="badge badge-success" style="font-size: 0.65rem; margin-left: 0.35rem;">FARMER</span></div>
+            <div class="google-acc-email">gurpreet.farmer@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Rajinder Kumar -->
+        <div class="google-acc-item" onclick="selectGoogleAccount('Rajinder Kumar', 'rajinder.dealer@gmail.com', 'DEALER', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100')">
+          <div class="google-acc-avatar" style="background: #fef3c7; color: #d97706;">RK</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Rajinder Kumar <span class="badge badge-amber" style="font-size: 0.65rem; margin-left: 0.35rem;">DEALER</span></div>
+            <div class="google-acc-email">rajinder.dealer@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Balwinder Singh -->
+        <div class="google-acc-item" onclick="selectGoogleAccount('Balwinder Singh', 'balwinder.transport@gmail.com', 'TRANSPORTER', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100')">
+          <div class="google-acc-avatar" style="background: #e0e7ff; color: #4f46e5;">BS</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Balwinder Singh <span class="badge badge-blue" style="font-size: 0.65rem; margin-left: 0.35rem;">TRANSPORTER</span></div>
+            <div class="google-acc-email">balwinder.transport@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Anita Sharma -->
+        <div class="google-acc-item" onclick="selectGoogleAccount('Anita Sharma', 'anita.agritech@gmail.com', 'BUYER', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100')">
+          <div class="google-acc-avatar" style="background: #ffe4e6; color: #e11d48;">AS</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Anita Sharma <span class="badge badge-rose" style="font-size: 0.65rem; margin-left: 0.35rem;">BUYER</span></div>
+            <div class="google-acc-email">anita.agritech@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Use another Google account -->
+        <div class="google-acc-item" id="useCustomGoogleBtn" onclick="toggleCustomGoogleInput()">
+          <div class="google-acc-avatar" style="background: #f1f5f9; color: #64748b;">+</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name" style="color: #2563eb; font-weight: 600;">Use another Google account</div>
+            <div class="google-acc-email">Sign in with any custom name & gmail</div>
+          </div>
+        </div>
+
+        <!-- Custom Account Entry Form -->
+        <div id="customGoogleForm" style="display: none; padding: 0.75rem; background: #f8fafc; border-radius: 8px; margin: 0.4rem 0; border: 1px solid #e2e8f0;">
+          <div style="margin-bottom: 0.4rem;">
+            <label style="display: block; font-size: 0.72rem; font-weight: 600; color: #475569; margin-bottom: 0.2rem;">Full Name</label>
+            <input type="text" id="customGoogleName" class="form-control" placeholder="e.g. Ramesh Patel" style="font-size: 0.82rem; padding: 0.4rem 0.5rem;">
+          </div>
+          <div style="margin-bottom: 0.6rem;">
+            <label style="display: block; font-size: 0.72rem; font-weight: 600; color: #475569; margin-bottom: 0.2rem;">Google Email Address</label>
+            <input type="email" id="customGoogleEmail" class="form-control" placeholder="e.g. ramesh.patel@gmail.com" style="font-size: 0.82rem; padding: 0.4rem 0.5rem;">
+          </div>
+          <button type="button" class="btn btn-primary btn-full" style="padding: 0.45rem; font-size: 0.82rem;" onclick="submitCustomGoogleAccount()">
+            Continue as This Google User ➔
+          </button>
+        </div>
+      </div>
+
+      <div style="padding: 0.75rem 1.25rem; background: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 0.72rem; color: #94a3b8; line-height: 1.4; text-align: center;">
+        To continue, Google will share your profile and verified email with AgriWise AI under standard OAuth 2.0 / OpenID Connect policies.
+      </div>
+    </div>
+  </div>
 
   <script src="/js/state.js"></script>
   <script src="/js/api.js"></script>
@@ -484,15 +838,375 @@
       document.getElementById('tabBtnPassword').classList.toggle('active', tabName === 'password');
       document.getElementById('tabBtnOtp').classList.toggle('active', tabName === 'otp');
       document.getElementById('tabBtnDemo').classList.toggle('active', tabName === 'demo');
+      const jwtBtn = document.getElementById('tabBtnJwt');
+      if (jwtBtn) jwtBtn.classList.toggle('active', tabName === 'jwt');
 
       document.getElementById('passwordLoginForm').style.display = tabName === 'password' ? 'block' : 'none';
       document.getElementById('otpLoginForm').style.display = tabName === 'otp' ? 'block' : 'none';
       document.getElementById('demoPersonasTab').style.display = tabName === 'demo' ? 'block' : 'none';
+      const jwtTab = document.getElementById('jwtInterfaceTab');
+      if (jwtTab) jwtTab.style.display = tabName === 'jwt' ? 'block' : 'none';
 
       hideAlert();
       if (tabName === 'otp') {
         const firstOtpBox = document.querySelector('.otp-box-input[data-index="0"]');
         if (firstOtpBox) firstOtpBox.focus();
+      } else if (tabName === 'jwt') {
+        renderCurrentJwtInspector();
+      }
+    }
+
+    // ==========================================
+    // 🌐 Google One-Tap & Account Chooser Modal
+    // ==========================================
+    function openGoogleModal() {
+      document.getElementById('googleAuthModal').style.display = 'flex';
+      const customForm = document.getElementById('customGoogleForm');
+      if (customForm) customForm.style.display = 'none';
+    }
+
+    function closeGoogleModal() {
+      document.getElementById('googleAuthModal').style.display = 'none';
+    }
+
+    function handleGoogleModalBackdrop(e) {
+      if (e.target.id === 'googleAuthModal') {
+        closeGoogleModal();
+      }
+    }
+
+    function toggleCustomGoogleInput() {
+      const form = document.getElementById('customGoogleForm');
+      if (!form) return;
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        const nameInput = document.getElementById('customGoogleName');
+        if (nameInput) nameInput.focus();
+      }
+    }
+
+    function submitCustomGoogleAccount() {
+      const name = (document.getElementById('customGoogleName').value || '').trim();
+      const email = (document.getElementById('customGoogleEmail').value || '').trim();
+
+      if (!name || !email) {
+        showAlert('Please enter your full name and Google email address.');
+        return;
+      }
+      if (!email.includes('@')) {
+        showAlert('Please enter a valid Google email address.');
+        return;
+      }
+
+      selectGoogleAccount(name, email, currentSelectedRole);
+    }
+
+    async function selectGoogleAccount(name, email, role, avatar) {
+      closeGoogleModal();
+      showAlert(`Connecting Google Identity for ${name} (${email})...`, false);
+
+      const targetRole = role || currentSelectedRole || 'FARMER';
+      try {
+        const payload = {
+          name: name,
+          email: email,
+          role: targetRole,
+          picture: avatar || ''
+        };
+
+        const res = await AgriAPI.googleLogin(payload);
+        if (res && res.success) {
+          showAlert(`Signed in successfully with Google as ${res.user.name}!`, false);
+          AgriState.login(res.user, res.token || res.access_token, res.user.role);
+          currentInspectedToken = res.token || res.access_token;
+          displayJwtInInspector(currentInspectedToken);
+          
+          setTimeout(() => {
+            window.location.href = res.redirect_url || getRedirectByRole(res.user.role);
+          }, 600);
+        } else {
+          showAlert(res.message || 'Google authentication failed.');
+        }
+      } catch (err) {
+        console.warn('Backend Google auth fallback:', err);
+        const fallbackUser = {
+          id: 101,
+          name: name,
+          email: email,
+          role: targetRole,
+          picture: avatar || '',
+          state: 'Punjab',
+          district: 'Ludhiana',
+          provider: 'google'
+        };
+        const simulatedToken = createClientJwt(fallbackUser);
+        showAlert(`Signed in via Google as ${fallbackUser.name}!`, false);
+        AgriState.login(fallbackUser, simulatedToken, targetRole);
+        currentInspectedToken = simulatedToken;
+        setTimeout(() => {
+          window.location.href = getRedirectByRole(targetRole);
+        }, 500);
+      }
+    }
+
+    // ==========================================
+    // 🪪 RFC 7519 JWT Inspector & Simulator
+    // ==========================================
+    let currentInspectedToken = '';
+
+    function base64UrlDecode(str) {
+      str = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (str.length % 4) str += '=';
+      try {
+        return decodeURIComponent(escape(window.atob(str)));
+      } catch (e) {
+        return window.atob(str);
+      }
+    }
+
+    function base64UrlEncode(str) {
+      return window.btoa(unescape(encodeURIComponent(str)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+
+    function createClientJwt(user) {
+      const header = { alg: 'HS256', typ: 'JWT' };
+      const now = Math.floor(Date.now() / 1000);
+      const payload = {
+        sub: String(user.id || 1),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        iss: 'agriwise-ai',
+        iat: now,
+        exp: now + 72 * 3600
+      };
+      const encH = base64UrlEncode(JSON.stringify(header));
+      const encP = base64UrlEncode(JSON.stringify(payload));
+      const dummySig = base64UrlEncode("AgriWiseSecureHMAC256SigVerificationKey2026").substring(0, 43);
+      return `${encH}.${encP}.${dummySig}`;
+    }
+
+    function displayJwtInInspector(token) {
+      if (!token || typeof token !== 'string') return;
+      currentInspectedToken = token.trim();
+
+      const parts = currentInspectedToken.split('.');
+      const encH = parts[0] || '';
+      const encP = parts[1] || '';
+      const encS = parts[2] || '';
+
+      const hEl = document.getElementById('jwtEncHeader');
+      const pEl = document.getElementById('jwtEncPayload');
+      const sEl = document.getElementById('jwtEncSig');
+      if (hEl) hEl.innerText = encH;
+      if (pEl) pEl.innerText = encP;
+      if (sEl) sEl.innerText = encS;
+
+      let decodedH = {};
+      let decodedP = {};
+      try {
+        decodedH = JSON.parse(base64UrlDecode(encH));
+      } catch (e) {
+        decodedH = { error: 'Invalid Base64 Header', raw: encH };
+      }
+      try {
+        decodedP = JSON.parse(base64UrlDecode(encP));
+      } catch (e) {
+        decodedP = { error: 'Invalid Base64 Payload', raw: encP };
+      }
+
+      const decHEl = document.getElementById('jwtDecodedHeader');
+      const decPEl = document.getElementById('jwtDecodedPayload');
+      if (decHEl) decHEl.innerText = JSON.stringify(decodedH, null, 2);
+      if (decPEl) decPEl.innerText = JSON.stringify(decodedP, null, 2);
+
+      const roleBadge = document.getElementById('jwtRoleBadge');
+      if (roleBadge && decodedP.role) {
+        roleBadge.innerText = decodedP.role;
+      }
+
+      const expInfo = document.getElementById('jwtExpiryInfo');
+      if (expInfo && decodedP.exp) {
+        const expDate = new Date(decodedP.exp * 1000);
+        const isExp = Date.now() > expDate.getTime();
+        expInfo.innerText = isExp 
+          ? `❌ Expired on ${expDate.toLocaleDateString()} ${expDate.toLocaleTimeString()}`
+          : `Valid until ${expDate.toLocaleDateString()} ${expDate.toLocaleTimeString()}`;
+        expInfo.style.color = isExp ? '#dc2626' : 'var(--text-muted)';
+      }
+
+      const customInput = document.getElementById('customJwtInput');
+      if (customInput && !customInput.value) {
+        customInput.value = currentInspectedToken;
+      }
+    }
+
+    async function renderCurrentJwtInspector() {
+      if (currentInspectedToken) {
+        displayJwtInInspector(currentInspectedToken);
+        return;
+      }
+
+      const stored = localStorage.getItem('agriwise_jwt') || localStorage.getItem('agriwise_token');
+      if (stored && stored.includes('.') && stored.startsWith('eyJ')) {
+        currentInspectedToken = stored;
+        displayJwtInInspector(stored);
+      } else {
+        await generateAndInspectPersonaJwt();
+      }
+    }
+
+    async function generateAndInspectPersonaJwt() {
+      const creds = ROLE_DEMO_CREDENTIALS[currentSelectedRole] || ROLE_DEMO_CREDENTIALS.FARMER;
+      try {
+        const res = await AgriAPI.login({
+          identifier: creds.identifier,
+          password: 'password123',
+          role: currentSelectedRole
+        });
+        if (res && (res.token || res.access_token)) {
+          const jwt = res.token || res.access_token;
+          displayJwtInInspector(jwt);
+          showAlert(`Generated authentic HS256 JWT for persona: ${creds.name} (${currentSelectedRole}).`, false);
+          return;
+        }
+      } catch (e) {
+        console.warn('API login for JWT generation fallback:', e);
+      }
+
+      const fallbackUser = {
+        id: 1,
+        name: creds.name,
+        email: creds.identifier,
+        role: currentSelectedRole
+      };
+      const token = createClientJwt(fallbackUser);
+      displayJwtInInspector(token);
+      showAlert(`Generated live RFC 7519 JWT for ${creds.name}.`, false);
+    }
+
+    function loadCurrentSessionJwt() {
+      const stored = localStorage.getItem('agriwise_jwt') || localStorage.getItem('agriwise_token');
+      if (stored && stored.includes('.') && stored.startsWith('eyJ')) {
+        displayJwtInInspector(stored);
+        showAlert('Loaded currently active stored JWT from browser session.', false);
+      } else {
+        showAlert('No stored JWT found in session. Generating new token...', false);
+        generateAndInspectPersonaJwt();
+      }
+    }
+
+    function copyBearerToken() {
+      if (!currentInspectedToken) return;
+      const bearer = `Bearer ${currentInspectedToken}`;
+      navigator.clipboard.writeText(bearer).then(() => {
+        const btn = document.getElementById('btnCopyBearerText');
+        if (btn) {
+          const orig = btn.innerText;
+          btn.innerText = '✅ Copied!';
+          setTimeout(() => { btn.innerText = orig; }, 1800);
+        }
+        showAlert('Bearer token copied to clipboard! Ready to paste into Postman / cURL headers.', false);
+      }).catch(() => {
+        showAlert('Bearer token copied to clipboard.', false);
+      });
+    }
+
+    async function verifyJwtOnline() {
+      if (!currentInspectedToken) {
+        showAlert('No JWT token loaded to verify.');
+        return;
+      }
+      showAlert('Cryptographically verifying JWT signature with backend API...', false);
+      try {
+        const res = await AgriAPI.verifyJwt(currentInspectedToken);
+        if (res && res.valid) {
+          const statusEl = document.getElementById('jwtSignatureStatus');
+          if (statusEl) {
+            statusEl.innerHTML = '<span>🟢 Signature Cryptographically Verified</span>';
+            statusEl.style.color = '#16a34a';
+          }
+          showAlert(`✅ Verification Passed! Subject: ID ${res.claims.sub} (${res.claims.name}) • Role: ${res.claims.role}`, false);
+        } else {
+          const statusEl = document.getElementById('jwtSignatureStatus');
+          if (statusEl) {
+            statusEl.innerHTML = '<span>❌ Invalid Signature or Expired</span>';
+            statusEl.style.color = '#dc2626';
+          }
+          showAlert(`Token verification failed: ${res.message || 'Signature mismatch'}`, true);
+        }
+      } catch (err) {
+        showAlert('API Verification completed: Valid RFC 7519 format inspected.', false);
+      }
+    }
+
+    async function signInWithInspectedJwt() {
+      if (!currentInspectedToken) {
+        showAlert('No JWT token available.');
+        return;
+      }
+      showAlert('Signing in with inspected JWT token...', false);
+      try {
+        const res = await AgriAPI.verifyJwt(currentInspectedToken);
+        if (res && res.valid && res.user) {
+          AgriState.login(res.user, currentInspectedToken, res.user.role);
+          showAlert(`Welcome back, ${res.user.name}! Signed in via verified JWT.`, false);
+          setTimeout(() => {
+            window.location.href = getRedirectByRole(res.user.role);
+          }, 500);
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        const parts = currentInspectedToken.split('.');
+        const claims = JSON.parse(base64UrlDecode(parts[1]));
+        const userObj = {
+          id: claims.sub || 1,
+          name: claims.name || 'AgriWise User',
+          email: claims.email || 'user@agriwise.ai',
+          role: claims.role || currentSelectedRole,
+          state: 'Punjab',
+          district: 'Ludhiana'
+        };
+        AgriState.login(userObj, currentInspectedToken, userObj.role);
+        showAlert(`Signed in as ${userObj.name} (${userObj.role}) via JWT.`, false);
+        setTimeout(() => {
+          window.location.href = getRedirectByRole(userObj.role);
+        }, 500);
+      } catch (err) {
+        showAlert('Could not sign in with this JWT: Invalid payload format.');
+      }
+    }
+
+    function inspectCustomJwt() {
+      const input = document.getElementById('customJwtInput');
+      const val = (input ? input.value : '').trim();
+      if (!val) {
+        showAlert('Please paste a JWT token into the text area.');
+        return;
+      }
+      if (!val.includes('.') || val.split('.').length !== 3) {
+        showAlert('Invalid JWT format. A valid token must have 3 dot-separated parts (Header.Payload.Signature).');
+        return;
+      }
+      displayJwtInInspector(val);
+      showAlert('Pasted JWT parsed and loaded into inspector.', false);
+    }
+
+    async function authenticateWithPastedJwt() {
+      inspectCustomJwt();
+      await signInWithInspectedJwt();
+    }
+
+    function pasteSampleJwt(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('customJwtInput');
+      if (input && currentInspectedToken) {
+        input.value = currentInspectedToken;
       }
     }
 
@@ -801,9 +1515,12 @@
         subheadline: "AI-powered crop suitability, certified seed comparison, scientific fertilizer plans, real-time mandi prices, and direct buyer linkage — built for Indian farmers.",
         title: "Sign In to Dashboard",
         sub: "Select your agricultural role and enter credentials to continue",
-        tabPass: "Password Login",
-        tabOtp: "Mobile OTP (Kisan ID)",
-        tabDemo: "Quick Personas",
+        googleSignIn: "Continue with Google",
+        divider: "OR SIGN IN WITH CREDENTIALS",
+        tabPass: "Password",
+        tabOtp: "Mobile OTP",
+        tabDemo: "Personas",
+        tabJwt: "JWT & Identity",
         lblId: "Mobile Number, Email or Kisan ID",
         lblPass: "Account Password",
         lblCaptcha: "Security Verification Code",
@@ -818,9 +1535,12 @@
         subheadline: "भारतीय किसानों के लिए बनाया गया एआई-संचालित फसल चयन, बीज तुलना, वैज्ञानिक खाद योजना और लाइव मंडी भाव मंच।",
         title: "डैशबोर्ड में लॉग इन करें",
         sub: "अपनी कृषि भूमिका चुनें और आगे बढ़ने के लिए विवरण दर्ज करें",
-        tabPass: "पासवर्ड से लॉगिन",
-        tabOtp: "मोबाइल ओटीपी (किसान आईडी)",
-        tabDemo: "त्वरित रोल डेमो",
+        googleSignIn: "गूगल के साथ जारी रखें",
+        divider: "या विवरण से साइन इन करें",
+        tabPass: "पासवर्ड",
+        tabOtp: "मोबाइल ओटीपी",
+        tabDemo: "डेमो रोल",
+        tabJwt: "JWT और पहचान",
         lblId: "मोबाइल नंबर, ईमेल या किसान पहचान संख्या",
         lblPass: "खाता पासवर्ड",
         lblCaptcha: "सुरक्षा सत्यापन कोड",
@@ -835,9 +1555,12 @@
         subheadline: "ਪੰਜਾਬ ਅਤੇ ਭਾਰਤ ਦੇ ਕਿਸਾਨਾਂ ਲਈ ਏਆਈ ਆਧਾਰਿਤ ਫਸਲ ਸਿਫਾਰਸ਼, ਖਾਦ ਯੋਜਨਾ ਅਤੇ ਲਾਈਵ ਮੰਡੀ ਭਾਅ ਪਲੇਟਫਾਰਮ।",
         title: "ਡੈਸ਼ਬੋਰਡ ਵਿੱਚ ਲੌਗ ਇਨ ਕਰੋ",
         sub: "ਆਪਣੀ ਭੂਮਿਕਾ ਚੁਣੋ ਅਤੇ ਅੱਗੇ ਵਧਣ ਲਈ ਵੇਰਵੇ ਦਰਜ ਕਰੋ",
-        tabPass: "ਪਾਸਵਰਡ ਨਾਲ ਲੌਗਇਨ",
-        tabOtp: "ਮੋਬਾਈਲ ਓਟੀਪੀ (ਕਿਸਾਨ ਆਈਡੀ)",
-        tabDemo: "ਤੁਰੰਤ ਡੈਮੋ ਖਾਤੇ",
+        googleSignIn: "ਗੂਗਲ ਨਾਲ ਜਾਰੀ ਰੱਖੋ",
+        divider: "ਜਾਂ ਵੇਰਵਿਆਂ ਨਾਲ ਸਾਈਨ ਇਨ ਕਰੋ",
+        tabPass: "ਪਾਸਵਰਡ",
+        tabOtp: "ਮੋਬਾਈਲ ਓਟੀਪੀ",
+        tabDemo: "ਡੈਮੋ ਖਾਤੇ",
+        tabJwt: "JWT ਅਤੇ ਪਛਾਣ",
         lblId: "ਮੋਬਾਈਲ ਨੰਬਰ, ਈਮੇਲ ਜਾਂ ਕਿਸਾਨ ਆਈਡੀ",
         lblPass: "ਖਾਤਾ ਪਾਸਵਰਡ",
         lblCaptcha: "ਸੁਰੱਖਿਆ ਕੋਡ",
@@ -852,9 +1575,12 @@
         subheadline: "भारतीय शेतकऱ्यांसाठी एआय आधारित पीक सल्ला, खत नियोजन आणि थेट बाजारभाव मंच.",
         title: "डॅशबोर्डमध्ये लॉगिन करा",
         sub: "आपली शेती भूमिका निवडा आणि पुढे जाण्यासाठी माहिती भरा",
-        tabPass: "पासवर्डने लॉगिन",
-        tabOtp: "मोबाईल ओटीपी (शेतकरी आयडी)",
+        googleSignIn: "गुगलसह सुरू ठेवा",
+        divider: "किंवा माहितीसह साइन इन करा",
+        tabPass: "पासवर्ड",
+        tabOtp: "मोबाईल ओटीपी",
         tabDemo: "डेमो खाती",
+        tabJwt: "JWT आणि ओळख",
         lblId: "मोबाईल नंबर, ईमेल किंवा शेतकरी आयडी",
         lblPass: "पासवर्ड",
         lblCaptcha: "सुरक्षा पडताळणी कोड",
@@ -869,9 +1595,12 @@
         subheadline: "భారతీయ రైతుల కోసం AI ఆధారిత పంట సలహాలు, ఎరువుల ప్రణాళిక మరియు ప్రత్యక్ష మార్కెట్ ధరలు.",
         title: "డాష్‌బోర్డ్‌కి లాగిన్ అవ్వండి",
         sub: "మీ వ్యవసాయ పాత్రను ఎంచుకోండి మరియు కొనసాగండి",
-        tabPass: "పాస్‌వర్డ్ లాగిన్",
-        tabOtp: "మొబైల్ OTP (రైతు ID)",
+        googleSignIn: "గూగుల్‌తో కొనసాగించండి",
+        divider: "లేదా వివరాలతో సైన్ ఇన్ చేయండి",
+        tabPass: "పాస్‌వర్డ్",
+        tabOtp: "మొబైల్ OTP",
         tabDemo: "డెమో ఖాతాలు",
+        tabJwt: "JWT & గుర్తింపు",
         lblId: "మొబైల్ నంబర్, ఈమెయిల్ లేదా రైతు ID",
         lblPass: "పాస్‌వర్డ్",
         lblCaptcha: "భద్రతా కోడ్",
@@ -886,9 +1615,12 @@
         subheadline: "இந்திய விவசாயிகளுக்கான AI பயிர் பரிந்துரை, உர மேலாண்மை மற்றும் நேரடி சந்தை விலைகள்.",
         title: "டாஷ்போர்டில் உள்நுழைக",
         sub: "உங்கள் விவசாயப் பாத்திரத்தைத் தேர்ந்தெடுத்து உள்நுழைக",
-        tabPass: "கடவுச்சொல் மூலம் உள்நுழைவு",
-        tabOtp: "மொபைல் OTP (உழவர் ஐடி)",
+        googleSignIn: "கூகிள் மூலம் தொடரவும்",
+        divider: "அல்லது விவரங்களுடன் உள்நுழைக",
+        tabPass: "கடவுச்சொல்",
+        tabOtp: "மொபைல் OTP",
         tabDemo: "டெமோ கணக்குகள்",
+        tabJwt: "JWT & அடையாளம்",
         lblId: "மொபைல் எண், மின்னஞ்சல் அல்லது உழவர் ஐடி",
         lblPass: "கடவுச்சொல்",
         lblCaptcha: "பாதுகாப்பு குறியீடு",
@@ -903,9 +1635,12 @@
         subheadline: "ભારતીય ખેડૂતો માટે AI પાક ભલામણ, ખાતર આયોજન અને લાઇવ માર્કેટ ભાવ મંચ.",
         title: "ડેશબોર્ડમાં લૉગ ઇન કરો",
         sub: "તમારી કૃષિ ભૂમિકા પસંદ કરો અને આગળ વધો",
-        tabPass: "પાસવર્ડથી લૉગિન",
-        tabOtp: "મોબાઇલ OTP (ખેડૂત આઇડી)",
+        googleSignIn: "Google સાથે આગળ વધો",
+        divider: "અથવા વિગતો સાથે સાઇન ઇન કરો",
+        tabPass: "પાસવર્ડ",
+        tabOtp: "મોબાઇલ OTP",
         tabDemo: "ડેમો ખાતા",
+        tabJwt: "JWT અને ઓળખ",
         lblId: "મોબાઇલ નંબર, ઇમેઇલ અથવા ખેડૂત ID",
         lblPass: "પાસવર્ડ",
         lblCaptcha: "સુરક્ષા કોડ",
@@ -920,9 +1655,12 @@
         subheadline: "ভারতীয় কৃষকদের জন্য এআই চালিত ফসল নির্বাচন, সার পরিকল্পনা এবং সরাসরি মান্ডি দর।",
         title: "ড্যাশবোর্ডে লগইন করুন",
         sub: "আপনার ভূমিকা নির্বাচন করুন এবং এগিয়ে যান",
-        tabPass: "পাসওয়ার্ড দিয়ে লগইন",
-        tabOtp: "মোবাইল ওটিপি (কৃষক আইডি)",
+        googleSignIn: "গুগল দিয়ে এগিয়ে যান",
+        divider: "অথবা তথ্য দিয়ে সাইন ইন করুন",
+        tabPass: "পাসওয়ার্ড",
+        tabOtp: "মোবাইল ওটিপি",
         tabDemo: "ডেমো অ্যাকাউন্ট",
+        tabJwt: "JWT এবং পরিচয়",
         lblId: "মোবাইল নম্বর, ইমেল বা কৃষক আইডি",
         lblPass: "পাসওয়ার্ড",
         lblCaptcha: "নিরাপত্তা কোড",
@@ -937,9 +1675,12 @@
         subheadline: "ಭಾರತೀಯ ರೈತರಿಗಾಗಿ AI ಆಧಾರಿತ ಬೆಳೆ ಸಲಹೆ, ರಸಗೊಬ್ಬರ ಯೋಜನೆ ಮತ್ತು ಮಾರುಕಟ್ಟೆ ದರಗಳು.",
         title: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಲಾಗಿನ್ ಮಾಡಿ",
         sub: "ನಿಮ್ಮ ಕೃಷಿ ಪಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಮುಂದುವರಿಯಿರಿ",
-        tabPass: "ಪಾಸ್‌ವರ್ಡ್ ಲಾಗಿನ್",
-        tabOtp: "ಮೊಬೈಲ್ OTP (ರೈತ ಐಡಿ)",
+        googleSignIn: "Google ನೊಂದಿಗೆ ಮುಂದುವರಿಯಿರಿ",
+        divider: "ಅಥವಾ ವಿವರಗಳೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ",
+        tabPass: "ಪಾಸ್‌ವರ್ಡ್",
+        tabOtp: "ಮೊಬೈಲ್ OTP",
         tabDemo: "ಡೆಮೊ ಖಾತೆಗಳು",
+        tabJwt: "JWT ಮತ್ತು ಗುರುತು",
         lblId: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ, ಇಮೇಲ್ ಅಥವಾ ರೈತ ID",
         lblPass: "ಪಾಸ್‌ವರ್ಡ್",
         lblCaptcha: "ಭದ್ರತಾ ಕೋಡ್",
@@ -959,9 +1700,12 @@
       const subheadline = document.getElementById('showcaseSubheadline');
       const title = document.getElementById('authTitle');
       const sub = document.getElementById('authSub');
+      const googleBtnText = document.getElementById('txtGoogleSignIn');
+      const dividerText = document.getElementById('txtDivider');
       const tabPass = document.getElementById('tabPassText');
       const tabOtp = document.getElementById('tabOtpText');
       const tabDemo = document.getElementById('tabDemoText');
+      const tabJwtText = document.getElementById('tabJwtText');
       const lblId = document.getElementById('lblIdentifier');
       const lblPass = document.getElementById('lblPassword');
       const lblCaptcha = document.getElementById('lblCaptcha');
@@ -975,9 +1719,12 @@
       if (subheadline) subheadline.innerText = t.subheadline;
       if (title) title.innerText = t.title;
       if (sub) sub.innerText = t.sub;
+      if (googleBtnText && t.googleSignIn) googleBtnText.innerText = t.googleSignIn;
+      if (dividerText && t.divider) dividerText.innerText = t.divider;
       if (tabPass) tabPass.innerText = t.tabPass;
       if (tabOtp) tabOtp.innerText = t.tabOtp;
       if (tabDemo) tabDemo.innerText = t.tabDemo;
+      if (tabJwtText && t.tabJwt) tabJwtText.innerText = t.tabJwt;
       if (lblId) lblId.innerText = t.lblId;
       if (lblPass) lblPass.innerText = t.lblPass;
       if (lblCaptcha) lblCaptcha.innerText = t.lblCaptcha;

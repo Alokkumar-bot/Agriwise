@@ -30,10 +30,10 @@ const AgriState = {
   // Current language: en, hi, pa, mr, te, ta, gu, bn, kn
   currentLang: localStorage.getItem('agriwise_lang') || 'en',
 
-  authToken: localStorage.getItem('agriwise_token') || null,
+  authToken: localStorage.getItem('agriwise_jwt') || localStorage.getItem('agriwise_token') || null,
 
   isAuthenticated() {
-    return !!(this.authToken || localStorage.getItem('agriwise_token'));
+    return !!(this.authToken || localStorage.getItem('agriwise_jwt') || localStorage.getItem('agriwise_token'));
   },
 
   login(userData, token, role) {
@@ -43,6 +43,7 @@ const AgriState = {
     this.authToken = token;
     localStorage.setItem('agriwise_user', JSON.stringify(userData));
     localStorage.setItem('agriwise_token', token);
+    localStorage.setItem('agriwise_jwt', token);
     localStorage.setItem('agriwise_role', fixedRole);
   },
 
@@ -51,6 +52,7 @@ const AgriState = {
     this.authToken = null;
     localStorage.removeItem('agriwise_user');
     localStorage.removeItem('agriwise_token');
+    localStorage.removeItem('agriwise_jwt');
     if (window.AgriAPI) {
       window.AgriAPI.logout().catch(() => {});
     }

@@ -6,6 +6,15 @@
 const AgriAPI = {
   baseUrl: window.location.origin,
 
+  getAuthHeaders(customHeaders = {}) {
+    const headers = { 'Content-Type': 'application/json', ...customHeaders };
+    const token = localStorage.getItem('agriwise_jwt') || localStorage.getItem('agriwise_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  },
+
   async get(endpoint, params = {}) {
     const url = new URL(endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`);
     Object.keys(params).forEach(key => {
@@ -15,7 +24,12 @@ const AgriAPI = {
     });
 
     try {
-      const res = await fetch(url.toString());
+      const headers = {};
+      const token = localStorage.getItem('agriwise_jwt') || localStorage.getItem('agriwise_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch(url.toString(), { headers });
       if (!res.ok) {
         throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
       }
@@ -30,7 +44,7 @@ const AgriAPI = {
     try {
       const res = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(data)
       });
       if (!res.ok) {
@@ -47,7 +61,7 @@ const AgriAPI = {
     try {
       const res = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(data)
       });
       if (!res.ok) {
@@ -61,6 +75,17 @@ const AgriAPI = {
   },
 
   // Authentication API
+  googleLogin(payload) {
+    return this.post('/api/auth/google', payload);
+  },
+
+  verifyJwt(token) {
+    return this.post('/api/auth/jwt/verify', { token });
+  },
+
+  decodeJwt(token) {
+    return this.post('/api/auth/jwt/decode', { token });
+  },
   login(credentials) {
     return this.post('/api/auth/login', credentials);
   },

@@ -80,5 +80,9 @@
   "cancelled_rentals": "रद्द किराये",
   "cancel_booking": "बुकिंग रद्द करें",
   "download_receipt": "रसीद डाउनलोड करें",
-  "contact_owner": "मालिक से संपर्क करें"
+  "contact_owner": "मालिक से संपर्क करें",
+  "continue_with_google": "गूगल के साथ जारी रखें",
+  "sign_in_with_google": "गूगल से साइन इन करें",
+  "tab_jwt": "JWT और पहचान",
+  "or_continue_with": "या विवरण से साइन इन करें"
 }

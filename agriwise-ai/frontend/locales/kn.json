@@ -80,5 +80,9 @@
   "cancelled_rentals": "ರದ್ದಾದ ಬಾಡಿಗೆಗಳು",
   "cancel_booking": "ಬುಕಿಂಗ್ ರದ್ದುಗೊಳಿಸಿ",
   "download_receipt": "ರಸೀದಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
-  "contact_owner": "ಮಾಲೀಕರನ್ನು ಸಂಪರ್ಕಿಸಿ"
+  "contact_owner": "ಮಾಲೀಕರನ್ನು ಸಂಪರ್ಕಿಸಿ",
+  "continue_with_google": "Google ನೊಂದಿಗೆ ಮುಂದುವರಿಯಿರಿ",
+  "sign_in_with_google": "Google ನಿಂದ ಸೈನ್ ಇನ್ ಮಾಡಿ",
+  "tab_jwt": "JWT ಮತ್ತು ಗುರುತು",
+  "or_continue_with": "ಅಥವಾ ವಿವರಗಳೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ"
 }

@@ -80,5 +80,9 @@
   "cancelled_rentals": "বাতিলকৃত ভাড়া",
   "cancel_booking": "বুকিং বাতিল করুন",
   "download_receipt": "রসিদ ডাউনলোড করুন",
-  "contact_owner": "মালিকের সাথে যোগাযোগ"
+  "contact_owner": "মালিকের সাথে যোগাযোগ",
+  "continue_with_google": "গুগল দিয়ে এগিয়ে যান",
+  "sign_in_with_google": "গুগল দিয়ে সাইন ইন করুন",
+  "tab_jwt": "JWT এবং পরিচয়",
+  "or_continue_with": "অথবা তথ্য দিয়ে সাইন ইন করুন"
 }

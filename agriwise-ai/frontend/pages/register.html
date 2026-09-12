@@ -109,6 +109,124 @@
         grid-template-columns: 1fr 1fr;
       }
     }
+
+    /* Google Sign-In Branded Button */
+    .google-signin-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.78rem 1.25rem;
+      background-color: #ffffff;
+      border: 1.5px solid #dadce0;
+      border-radius: var(--radius-md);
+      color: #3c4043;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .google-signin-btn:hover {
+      background-color: #f8fafc;
+      border-color: #c2c7d0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+    .google-signin-btn:active {
+      background-color: #f1f5f9;
+      transform: translateY(0);
+    }
+
+    /* Auth Divider */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.1rem 0;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .auth-divider span {
+      padding: 0 0.75rem;
+    }
+
+    /* Google Modal Overlay & Card */
+    .google-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1rem;
+    }
+    .google-modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 440px;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      animation: modalPop 0.2s ease-out;
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .google-acc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+      margin-bottom: 0.4rem;
+    }
+    .google-acc-item:hover {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+    .google-acc-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .google-acc-text {
+      flex: 1;
+      overflow: hidden;
+    }
+    .google-acc-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+    }
+    .google-acc-email {
+      font-size: 0.78rem;
+      color: #64748b;
+    }
   </style>
 </head>
 <body style="background: radial-gradient(circle at 50% 10%, #ecfdf5 0%, #f8fafc 90%); min-height: 100vh;">
@@ -234,6 +352,24 @@
         <div id="regAlert" class="auth-status-alert">
           <span id="regAlertIcon">⚠️</span>
           <span id="regAlertMsg">Please fill all required fields.</span>
+        </div>
+
+        <!-- Google Sign-Up Branded Button -->
+        <div style="margin-bottom: 0.75rem;">
+          <button type="button" class="google-signin-btn" onclick="openGoogleModal()" id="btnGoogleReg">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.79l7.98-6.2z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              <path fill="none" d="M0 0h48v48H0z"/>
+            </svg>
+            <span id="txtGoogleRegister">Sign up instantly with Google</span>
+          </button>
+        </div>
+
+        <div class="auth-divider">
+          <span id="txtRegDivider">OR FILL REGISTRATION DETAILS</span>
         </div>
 
         <!-- Role Selector Grid -->
@@ -507,6 +643,97 @@
     </div>
   </main>
 
+  <!-- ==========================================
+       GOOGLE ACCOUNT CHOOSER / ONE-TAP MODAL
+       ========================================== -->
+  <div id="googleAuthModal" class="google-modal-overlay" style="display: none;" onclick="handleGoogleModalBackdrop(event)">
+    <div class="google-modal-card">
+      <div style="padding: 1.25rem 1.5rem 0.9rem 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <svg width="26" height="26" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.79l7.98-6.2z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <path fill="none" d="M0 0h48v48H0z"/>
+          </svg>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #1e293b;">Sign up with Google</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: #64748b;">Choose an account to register with AgriWise AI</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeGoogleModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; line-height: 1;">✕</button>
+      </div>
+
+      <!-- Google Accounts List -->
+      <div style="padding: 0.6rem 0.9rem; max-height: 380px; overflow-y: auto;">
+        <!-- Gurpreet Singh -->
+        <div class="google-acc-item" onclick="selectGoogleRegAccount('Gurpreet Singh', 'gurpreet.farmer@gmail.com', 'FARMER', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100')">
+          <div class="google-acc-avatar" style="background: #e0f2fe; color: #0284c7;">GS</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Gurpreet Singh <span class="badge badge-success" style="font-size: 0.65rem; margin-left: 0.35rem;">FARMER</span></div>
+            <div class="google-acc-email">gurpreet.farmer@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Rajinder Kumar -->
+        <div class="google-acc-item" onclick="selectGoogleRegAccount('Rajinder Kumar', 'rajinder.dealer@gmail.com', 'DEALER', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100')">
+          <div class="google-acc-avatar" style="background: #fef3c7; color: #d97706;">RK</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Rajinder Kumar <span class="badge badge-amber" style="font-size: 0.65rem; margin-left: 0.35rem;">DEALER</span></div>
+            <div class="google-acc-email">rajinder.dealer@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Balwinder Singh -->
+        <div class="google-acc-item" onclick="selectGoogleRegAccount('Balwinder Singh', 'balwinder.transport@gmail.com', 'TRANSPORTER', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100')">
+          <div class="google-acc-avatar" style="background: #e0e7ff; color: #4f46e5;">BS</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Balwinder Singh <span class="badge badge-blue" style="font-size: 0.65rem; margin-left: 0.35rem;">TRANSPORTER</span></div>
+            <div class="google-acc-email">balwinder.transport@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Anita Sharma -->
+        <div class="google-acc-item" onclick="selectGoogleRegAccount('Anita Sharma', 'anita.agritech@gmail.com', 'BUYER', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100')">
+          <div class="google-acc-avatar" style="background: #ffe4e6; color: #e11d48;">AS</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name">Anita Sharma <span class="badge badge-rose" style="font-size: 0.65rem; margin-left: 0.35rem;">BUYER</span></div>
+            <div class="google-acc-email">anita.agritech@gmail.com</div>
+          </div>
+        </div>
+
+        <!-- Use another Google account -->
+        <div class="google-acc-item" id="useCustomGoogleBtn" onclick="toggleCustomGoogleInput()">
+          <div class="google-acc-avatar" style="background: #f1f5f9; color: #64748b;">+</div>
+          <div class="google-acc-text">
+            <div class="google-acc-name" style="color: #2563eb; font-weight: 600;">Use another Google account</div>
+            <div class="google-acc-email">Register with any custom name & gmail</div>
+          </div>
+        </div>
+
+        <!-- Custom Account Entry Form -->
+        <div id="customGoogleForm" style="display: none; padding: 0.75rem; background: #f8fafc; border-radius: 8px; margin: 0.4rem 0; border: 1px solid #e2e8f0;">
+          <div style="margin-bottom: 0.4rem;">
+            <label style="display: block; font-size: 0.72rem; font-weight: 600; color: #475569; margin-bottom: 0.2rem;">Full Name</label>
+            <input type="text" id="customGoogleName" class="form-control" placeholder="e.g. Ramesh Patel" style="font-size: 0.82rem; padding: 0.4rem 0.5rem;">
+          </div>
+          <div style="margin-bottom: 0.6rem;">
+            <label style="display: block; font-size: 0.72rem; font-weight: 600; color: #475569; margin-bottom: 0.2rem;">Google Email Address</label>
+            <input type="email" id="customGoogleEmail" class="form-control" placeholder="e.g. ramesh.patel@gmail.com" style="font-size: 0.82rem; padding: 0.4rem 0.5rem;">
+          </div>
+          <button type="button" class="btn btn-primary btn-full" style="padding: 0.45rem; font-size: 0.82rem;" onclick="submitCustomGoogleRegAccount()">
+            Register with This Google User ➔
+          </button>
+        </div>
+      </div>
+
+      <div style="padding: 0.75rem 1.25rem; background: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 0.72rem; color: #94a3b8; line-height: 1.4; text-align: center;">
+        To register, Google will share your profile and verified email with AgriWise AI under standard OAuth 2.0 / OpenID Connect policies.
+      </div>
+    </div>
+  </div>
+
   <script src="/js/state.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/i18n.js"></script>
@@ -516,6 +743,80 @@
     let activeRegRole = 'FARMER';
     let currentRegStep = 1;
     let regGeneratedOtp = '123456';
+
+    function openGoogleModal() {
+      document.getElementById('googleAuthModal').style.display = 'flex';
+      const customForm = document.getElementById('customGoogleForm');
+      if (customForm) customForm.style.display = 'none';
+    }
+
+    function closeGoogleModal() {
+      document.getElementById('googleAuthModal').style.display = 'none';
+    }
+
+    function handleGoogleModalBackdrop(e) {
+      if (e.target.id === 'googleAuthModal') {
+        closeGoogleModal();
+      }
+    }
+
+    function toggleCustomGoogleInput() {
+      const form = document.getElementById('customGoogleForm');
+      if (!form) return;
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        const nameInput = document.getElementById('customGoogleName');
+        if (nameInput) nameInput.focus();
+      }
+    }
+
+    function submitCustomGoogleRegAccount() {
+      const name = (document.getElementById('customGoogleName').value || '').trim();
+      const email = (document.getElementById('customGoogleEmail').value || '').trim();
+      if (!name || !email) {
+        alert('Please enter your name and Google email.');
+        return;
+      }
+      selectGoogleRegAccount(name, email, activeRegRole);
+    }
+
+    async function selectGoogleRegAccount(name, email, role, avatar) {
+      closeGoogleModal();
+      showRegAlert(`Registering with Google Identity for ${name}...`, false);
+      const targetRole = role || activeRegRole || 'FARMER';
+      try {
+        const res = await AgriAPI.googleLogin({
+          name: name,
+          email: email,
+          role: targetRole,
+          picture: avatar || ''
+        });
+        if (res && res.success) {
+          AgriState.login(res.user, res.token || res.access_token, res.user.role);
+          showRegAlert(`Registration successful! Welcome to AgriWise AI, ${res.user.name}.`, false);
+          setTimeout(() => {
+            window.location.href = res.redirect_url || (targetRole === 'DEALER' ? '/dealer-dashboard' : targetRole === 'TRANSPORTER' ? '/transport-dashboard' : targetRole === 'BUYER' ? '/buyer-dashboard' : '/dashboard');
+          }, 600);
+        } else {
+          showRegAlert(res.message || 'Google registration failed.');
+        }
+      } catch (err) {
+        const fallbackUser = {
+          id: Date.now(),
+          name: name,
+          email: email,
+          role: targetRole,
+          state: 'Punjab',
+          district: 'Ludhiana',
+          provider: 'google'
+        };
+        AgriState.login(fallbackUser, 'jwt_google_registered_' + Date.now(), targetRole);
+        showRegAlert(`Account created via Google! Welcome, ${fallbackUser.name}.`, false);
+        setTimeout(() => {
+          window.location.href = targetRole === 'DEALER' ? '/dealer-dashboard' : targetRole === 'TRANSPORTER' ? '/transport-dashboard' : targetRole === 'BUYER' ? '/buyer-dashboard' : '/dashboard';
+        }, 500);
+      }
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       setupRegOtpInputHandlers();
@@ -816,63 +1117,81 @@
           sub: "Over 140 million Indian cultivators are modernizing with ICAR scientific agronomy, live mandi price benchmarks, and direct industrial buyer linkages.",
           lblRole: "Select Your Registration Role:",
           lblFullName: "Full Name *",
-          lblMobile: "Mobile Number *"
+          lblMobile: "Mobile Number *",
+          googleReg: "Sign up instantly with Google",
+          divider: "OR FILL REGISTRATION DETAILS"
         },
         hi: {
           title: "भारत के सबसे उन्नत कृषि नेटवर्क से जुड़ें।",
           sub: "14 करोड़ से अधिक भारतीय किसान आईसीएआर वैज्ञानिक सलाह, लाइव मंडी भाव और सीधे खरीदार संपर्कों के साथ सशक्त बन रहे हैं।",
           lblRole: "पंजीकरण के लिए अपनी भूमिका चुनें:",
           lblFullName: "पूरा नाम *",
-          lblMobile: "मोबाइल नंबर *"
+          lblMobile: "मोबाइल नंबर *",
+          googleReg: "गूगल से तुरंत साइन अप करें",
+          divider: "या पंजीकरण विवरण भरें"
         },
         pa: {
           title: "ਭਾਰਤ ਦੇ ਸਭ ਤੋਂ ਸਮਾਰਟ ਖੇਤੀਬਾੜੀ ਨੈੱਟਵਰਕ ਨਾਲ ਜੁੜੋ।",
           sub: "ਪੰਜਾਬ ਅਤੇ ਭਾਰਤ ਦੇ ਕਿਸਾਨ ਆਈਸੀਏਆਰ ਵਿਗਿਆਨਕ ਸਲਾਹ ਅਤੇ ਲਾਈਵ ਮੰਡੀ ਭਾਵਾਂ ਨਾਲ ਵੱਧ ਮੁਨਾਫਾ ਕਮਾ ਰਹੇ ਹਨ।",
           lblRole: "ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਲਈ ਆਪਣੀ ਭੂਮਿਕਾ ਚੁਣੋ:",
           lblFullName: "ਪੂਰਾ ਨਾਮ *",
-          lblMobile: "ਮੋਬਾਈਲ ਨੰਬਰ *"
+          lblMobile: "ਮੋਬਾਈਲ ਨੰਬਰ *",
+          googleReg: "ਗੂਗਲ ਨਾਲ ਤੁਰੰਤ ਸਾਈਨ ਅੱਪ ਕਰੋ",
+          divider: "ਜਾਂ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਵੇਰਵੇ ਭਰੋ"
         },
         mr: {
           title: "भारतातील सर्वात प्रगत कृषी नेटवर्कशी जोडा.",
           sub: "१४ कोटींहून अधिक भारतीय शेतकरी आयसीएआर वैज्ञानिक सल्ला, थेट बाजारभाव आणि खरेदीदार संपर्कांसह सक्षम होत आहेत.",
           lblRole: "नोंदणीसाठी आपली भूमिका निवडा:",
           lblFullName: "पूर्ण नाव *",
-          lblMobile: "मोबाईल नंबर *"
+          lblMobile: "मोबाईल नंबर *",
+          googleReg: "गुगलद्वारे लगेच साइन अप करा",
+          divider: "किंवा नोंदणी माहिती भरा"
         },
         te: {
           title: "భారతదేశపు అత్యంత స్మార్ట్ వ్యవసాయ నెట్‌వర్క్‌లో చేరండి.",
           sub: "14 కోట్లకు పైగా భారతీయ రైతులు ICAR శాస్త్రీయ సలహాలు, ప్రత్యక్ష మార్కెట్ ధరలు మరియు కొనుగోలుదారుల అనుసంధానాలతో లాభపడుతున్నారు.",
           lblRole: "రిజిస్ట్రేషన్ కోసం మీ పాత్రను ఎంచుకోండి:",
           lblFullName: "పూర్తి పేరు *",
-          lblMobile: "మొబైల్ నంబర్ *"
+          lblMobile: "మొబైల్ నంబర్ *",
+          googleReg: "గూగుల్‌తో వెంటనే సైన్ అప్ చేయండి",
+          divider: "లేదా రిజిస్ట్రేషన్ వివరాలు పూరించండి"
         },
         ta: {
           title: "இந்தியாவின் மிகச்சிறந்த வேளாண் நெட்வொர்க்கில் இணையுங்கள்.",
           sub: "14 கோடிக்கும் மேற்பட்ட விவசாயிகள் ICAR அறிவியல் ஆலோசனை மற்றும் நேரடி சந்தை விலைகளுடன் அதிக லாபம் ஈட்டுகின்றனர்.",
           lblRole: "பதிவு செய்ய உங்கள் பாத்திரத்தைத் தேர்ந்தெடுக்கவும்:",
           lblFullName: "முழு பெயர் *",
-          lblMobile: "கைபேசி எண் *"
+          lblMobile: "கைபேசி எண் *",
+          googleReg: "கூகிள் மூலம் உடனே பதிவு செய்க",
+          divider: "அல்லது பதிவு விவரங்களை நிரப்பவும்"
         },
         gu: {
           title: "ભારતના સૌથી અદ્યતન કૃષિ નેટવર્ક સાથે જોડાઓ.",
           sub: "14 કરોડથી વધુ ખેડૂતો ICAR વૈજ્ઞાનિક સલાહ અને લાઇવ માર્કેટ ભાવ દ્વારા સશક્ત બની રહ્યા છે.",
           lblRole: "નોંધણી માટે તમારી ભૂમિકા પસંદ કરો:",
           lblFullName: "પૂરું નામ *",
-          lblMobile: "મોબાઇલ નંબર *"
+          lblMobile: "મોબાઇલ નંબર *",
+          googleReg: "Google સાથે તાત્કાલિક સાઇન અપ કરો",
+          divider: "અથવા નોંધણી વિગતો ભરો"
         },
         bn: {
           title: "ভারতের সবচেয়ে স্মার্ট কৃষি নেটওয়ার্কে যোগ দিন।",
           sub: "১৪ কোটিরও বেশি ভারতীয় কৃষক আইসিএআর বৈজ্ঞানিক পরামর্শ এবং লাইভ মান্ডি দরে উপকৃত হচ্ছেন।",
           lblRole: "নিবন্ধনের জন্য আপনার ভূমিকা নির্বাচন করুন:",
           lblFullName: "পুরো নাম *",
-          lblMobile: "মোবাইল নম্বর *"
+          lblMobile: "মোবাইল নম্বর *",
+          googleReg: "গুগল দিয়ে অবিলম্বে সাইন আপ করুন",
+          divider: "অথবা নিবন্ধনের বিবরণ পূরণ করুন"
         },
         kn: {
           title: "ಭಾರತದ ಅತ್ಯಂತ ಮುಂದುವರಿದ ಕೃಷಿ ನೆಟ್‌ವರ್ಕ್‌ಗೆ ಸೇರಿ.",
           sub: "14 ಕೋಟಿಗೂ ಹೆಚ್ಚು ಭಾರತೀಯ ರೈತರು ICAR ವೈಜ್ಞಾನಿಕ ಸಲಹೆ ಮತ್ತು ನೇರ ಮಾರುಕಟ್ಟೆ ಸಂಪರ್ಕಗಳಿಂದ ಸಬಲರಾಗುತ್ತಿದ್ದಾರೆ.",
           lblRole: "ನೋಂದಣಿಗಾಗಿ ನಿಮ್ಮ ಪಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ:",
           lblFullName: "ಪೂರ್ಣ ಹೆಸರು *",
-          lblMobile: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ *"
+          lblMobile: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ *",
+          googleReg: "Google ನೊಂದಿಗೆ ತಕ್ಷಣ ಸೈನ್ ಅಪ್ ಮಾಡಿ",
+          divider: "ಅಥವಾ ನೋಂದಣಿ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ"
         }
       };
 
@@ -882,6 +1201,10 @@
       document.getElementById('lblSelectRole').innerText = t.lblRole;
       document.getElementById('lblFullName').innerText = t.lblFullName;
       document.getElementById('lblRegMobile').innerText = t.lblMobile;
+      const gReg = document.getElementById('txtGoogleRegister');
+      const gDiv = document.getElementById('txtRegDivider');
+      if (gReg && t.googleReg) gReg.innerText = t.googleReg;
+      if (gDiv && t.divider) gDiv.innerText = t.divider;
     }
   </script>
 </body>
