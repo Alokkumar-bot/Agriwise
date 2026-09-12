@@ -802,12 +802,20 @@ def update_or_create_farm(payload: dict = Body(...), db: Session = Depends(get_d
     farm.area_acres = float(payload.get("area_acres", farm.area_acres))
     farm.current_crop = payload.get("current_crop", farm.current_crop)
     farm.irrigation_method = payload.get("irrigation_method", farm.irrigation_method)
+    if "previous_crop" in payload:
+        farm.previous_crop = payload.get("previous_crop", farm.previous_crop)
+    if "water_source" in payload:
+        farm.water_source = payload.get("water_source", farm.water_source)
+    if "water_availability" in payload:
+        farm.water_availability = payload.get("water_availability", farm.water_availability)
 
     # Update soil if provided
     soil_data = payload.get("soil", {})
     if soil_data:
         if not farm.soil:
             farm.soil = SoilProfile(farm_id=farm.id)
+        if "soil_type" in soil_data:
+            farm.soil.soil_type = str(soil_data["soil_type"])
         farm.soil.ph = float(soil_data.get("ph", farm.soil.ph))
         farm.soil.nitrogen_kg_ha = float(soil_data.get("nitrogen_kg_ha", farm.soil.nitrogen_kg_ha))
         farm.soil.phosphorus_kg_ha = float(soil_data.get("phosphorus_kg_ha", farm.soil.phosphorus_kg_ha))
@@ -819,6 +827,8 @@ def update_or_create_farm(payload: dict = Body(...), db: Session = Depends(get_d
     if water_data:
         if not farm.water:
             farm.water = WaterProfile(farm_id=farm.id)
+        if "source" in water_data:
+            farm.water.source = str(water_data["source"])
         farm.water.ph = float(water_data.get("ph", farm.water.ph))
         farm.water.ec_ds_m = float(water_data.get("ec_ds_m", farm.water.ec_ds_m))
         farm.water.tds_ppm = float(water_data.get("tds_ppm", farm.water.tds_ppm))

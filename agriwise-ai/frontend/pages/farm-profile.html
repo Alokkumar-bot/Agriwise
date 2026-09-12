@@ -18,6 +18,89 @@
       margin-bottom: 1rem;
       z-index: 10;
     }
+
+    .search-autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 1000;
+      margin-top: 4px;
+    }
+
+    .search-suggestion-item {
+      padding: 0.65rem 0.9rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+      transition: background 0.15s ease;
+    }
+
+    .search-suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-suggestion-item:hover,
+    .search-suggestion-item.selected {
+      background: #f0fdf4;
+      color: var(--primary-700);
+    }
+
+    .state-chips-container {
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.85rem;
+      scrollbar-width: thin;
+    }
+
+    .state-chip-btn {
+      padding: 0.3rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      border: 1px solid var(--border-light);
+      background: #f8fafc;
+      color: var(--text-main);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    .state-chip-btn:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
+    .state-chip-btn.active {
+      background: var(--primary-600);
+      color: #ffffff;
+      border-color: var(--primary-600);
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+    }
+
+    .status-highlight-flash {
+      animation: flash-green 0.8s ease;
+    }
+
+    @keyframes flash-green {
+      0% { background-color: #bbf7d0; }
+      100% { background-color: transparent; }
+    }
   </style>
 </head>
 <body>
@@ -41,7 +124,7 @@
       </div>
 
       <!-- Farm Selection Tabs -->
-      <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border-light); padding-bottom: 0.5rem;">
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-light); padding-bottom: 0.5rem; flex-wrap: wrap;">
         <button class="btn btn-primary btn-sm" id="tabFarm1" onclick="switchActiveFarm(1)">
           <span>🌾 Sahnewal Golden Acre Farm (5.0 Acres)</span>
         </button>
@@ -55,35 +138,64 @@
 
       <!-- Main Layout: Map on Left, Form on Right -->
       <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 2rem; align-items: start;">
-        <!-- Left: Interactive GPS Picker Map -->
+        <!-- Left: Interactive GPS Picker Map & Location Search -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
               <span class="icon">🗺</span>
               <span>Interactive GPS Land Boundary</span>
             </div>
-            <span class="badge badge-emerald" id="geoStatusBadge">GPS Locked (Ludhiana)</span>
+            <span class="badge badge-emerald" id="geoStatusBadge">GPS Locked (Ludhiana, Punjab)</span>
+          </div>
+
+          <!-- Location Search Bar with Autocomplete -->
+          <div style="margin-bottom: 0.75rem;">
+            <div style="display: flex; gap: 0.5rem; position: relative;">
+              <div style="position: relative; flex: 1;">
+                <input type="text" id="mapLocationSearch" class="form-control" 
+                       placeholder="🔍 Search state, district, or city across India... (e.g. Nashik, Karnal, Indore, Guntur, Pune, Patna)"
+                       autocomplete="off"
+                       oninput="handleSearchInput(event)"
+                       onkeydown="handleSearchKeydown(event)">
+                <div id="searchDropdown" class="search-autocomplete-dropdown" style="display: none;"></div>
+              </div>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="triggerSearchLocation()" style="white-space: nowrap;">
+                <span>🔍 Search</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick State Jump Chips -->
+          <div>
+            <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; display: flex; justify-content: space-between; align-items: center;">
+              <span>⚡ Quick State Jump:</span>
+              <span style="font-size: 0.72rem; color: var(--primary-700); font-weight: 600;">20 Agricultural States</span>
+            </div>
+            <div id="quickStateChips" class="state-chips-container">
+              <!-- Dynamically rendered state chips -->
+            </div>
           </div>
 
           <div id="farmPickerMap"></div>
 
-          <div style="display: flex; justify-content: space-between; font-size: 0.84rem; color: var(--text-muted);">
+          <div style="display: flex; justify-content: space-between; font-size: 0.84rem; color: var(--text-muted); flex-wrap: wrap; gap: 0.5rem;">
             <div><strong>Latitude:</strong> <span id="displayLat">30.9010</span>° N</div>
             <div><strong>Longitude:</strong> <span id="displayLon">75.8573</span>° E</div>
-            <div><strong>Elevation:</strong> ~244 meters</div>
+            <div><strong>Elevation:</strong> <span id="displayElevation">~244 meters</span></div>
           </div>
           <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0;">
-            💡 <em>Drag the pin or click anywhere on the map to position your farm center. Real-time weather and localized soil profiles synchronize automatically with these coordinates.</em>
+            💡 <em>Drag the pin or click anywhere across India to reposition your farm center. Changing location automatically synchronizes State, District, soils, crops, and micro-climate on the right!</em>
           </p>
         </div>
 
         <!-- Right: Farm Profile Parameters Form -->
-        <div class="card">
+        <div class="card" id="farmFormCard">
           <div class="card-header">
             <div class="card-title">
               <span class="icon">📋</span>
               <span>Farm Agronomic Attributes</span>
             </div>
+            <span style="font-size: 0.78rem; color: var(--primary-700); font-weight: 600;" id="syncNotice">● Auto-syncs with Map</span>
           </div>
 
           <form id="farmProfileForm" onsubmit="saveFarmProfile(event)">
@@ -102,20 +214,13 @@
               <div class="form-group">
                 <label class="form-label">State</label>
                 <select id="farmState" class="form-control" onchange="updateDistricts()">
-                  <option value="Punjab" selected>Punjab</option>
-                  <option value="Haryana">Haryana</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Madhya Pradesh">Madhya Pradesh</option>
+                  <!-- Dynamically populated with all 20 Indian states -->
                 </select>
               </div>
               <div class="form-group">
                 <label class="form-label">District</label>
-                <select id="farmDistrict" class="form-control">
-                  <option value="Ludhiana" selected>Ludhiana</option>
-                  <option value="Khanna">Khanna</option>
-                  <option value="Jalandhar">Jalandhar</option>
-                  <option value="Fatehgarh Sahib">Fatehgarh Sahib</option>
+                <select id="farmDistrict" class="form-control" onchange="onDistrictChanged()">
+                  <!-- Dynamically populated with districts for selected state -->
                 </select>
               </div>
             </div>
@@ -124,18 +229,26 @@
               <div class="form-group">
                 <label class="form-label">Primary Soil Classification</label>
                 <select id="farmSoilType" class="form-control">
-                  <option value="Alluvial Loam" selected>Alluvial Loam (High Fertility)</option>
-                  <option value="Sandy Loam">Sandy Loam (Rapid Drainage)</option>
-                  <option value="Clay Loam">Clay Loam (Moisture Retentive)</option>
-                  <option value="Black Cotton Soil">Black Cotton Soil (Regur)</option>
+                  <option value="Alluvial Loam">Alluvial Loam (High Fertility Indo-Gangetic)</option>
+                  <option value="Black Cotton Soil">Black Cotton Soil (Regur / Vertisol)</option>
+                  <option value="Red Sandy Loam">Red Sandy Loam (Southern & Peninsular)</option>
+                  <option value="Laterite Soil">Laterite Acidic Soil (Coastal & Ghats)</option>
+                  <option value="Sandy Loam">Sandy Loam (Semi-Arid Rapid Drainage)</option>
+                  <option value="Clay Loam">Clay Loam (Moisture Retentive Basin)</option>
+                  <option value="Mountain Brown Soil">Mountain Brown Soil (Himalayan Valley)</option>
+                  <option value="Coastal Saline Alluvial">Coastal Saline Alluvial (Deltaic)</option>
                 </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Primary Irrigation Infrastructure</label>
                 <select id="farmIrrigation" class="form-control">
-                  <option value="Subsurface Drip + Tube-well" selected>Subsurface Drip + Tube-well</option>
-                  <option value="Canal Siphon + Furrow">Canal Siphon + Furrow</option>
-                  <option value="Sprinkler System">Overhead Sprinkler System</option>
+                  <option value="Subsurface Drip + Tube-well">Subsurface Drip + Tube-well</option>
+                  <option value="Precision Micro-Drip + Fertigation">Precision Micro-Drip + Fertigation</option>
+                  <option value="Canal Siphon + Furrow Basin">Canal Siphon + Furrow Basin</option>
+                  <option value="Overhead Sprinkler System">Overhead Sprinkler System</option>
+                  <option value="Deep Borewell + Solar Submersible">Deep Borewell + Solar Submersible</option>
+                  <option value="River Lift Irrigation Network">River Lift Irrigation Network</option>
+                  <option value="Gravity Kuhl Mountain Channel">Gravity Kuhl Mountain Channel</option>
                   <option value="Flood Irrigation">Conventional Flood Basin</option>
                 </select>
               </div>
@@ -144,7 +257,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Water Source</label>
-                <input type="text" id="farmWaterSource" class="form-control" value="Deep Tube-well (180 ft)" required>
+                <input type="text" id="farmWaterSource" class="form-control" value="Deep Groundwater Tube-well (180 ft)" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Water Availability</label>
@@ -188,29 +301,368 @@
   <script>
     let mapInstance = null;
     let currentFarmId = 1;
+    let searchDebounceTimer = null;
+    let activeSearchResultIndex = -1;
+    let searchResultsCache = [];
 
     document.addEventListener('DOMContentLoaded', () => {
+      initStatesDropdown();
+      renderQuickStateChips();
       initMap();
+      loadActiveFarmFromState();
     });
 
-    function initMap() {
-      mapInstance = AgriMaps.initFarmMap('farmPickerMap', 30.9010, 75.8573, (lat, lon) => {
-        document.getElementById('displayLat').innerText = lat.toFixed(4);
-        document.getElementById('displayLon').innerText = lon.toFixed(4);
+    // 1. Populate State Dropdown dynamically from AgriMaps.INDIAN_STATES_DATA
+    function initStatesDropdown() {
+      const stateSelect = document.getElementById('farmState');
+      if (!stateSelect || !window.AgriMaps || !AgriMaps.INDIAN_STATES_DATA) return;
+
+      const states = Object.keys(AgriMaps.INDIAN_STATES_DATA);
+      stateSelect.innerHTML = states.map(st => `<option value="${st}">${st}</option>`).join('');
+      stateSelect.value = "Punjab";
+      populateDistricts("Punjab");
+    }
+
+    // 2. Populate District Dropdown for a given state
+    function populateDistricts(stateName, selectedDistrict = null) {
+      const districtSelect = document.getElementById('farmDistrict');
+      if (!districtSelect || !window.AgriMaps) return;
+
+      const stateData = AgriMaps.getStateData(stateName);
+      if (!stateData || !stateData.districts) return;
+
+      districtSelect.innerHTML = stateData.districts.map(d => 
+        `<option value="${d.name}">${d.name}</option>`
+      ).join('');
+
+      if (selectedDistrict && stateData.districts.some(d => d.name === selectedDistrict)) {
+        districtSelect.value = selectedDistrict;
+      } else {
+        districtSelect.value = stateData.districts[0].name;
+      }
+    }
+
+    // 3. Render Quick State Filter Chips
+    function renderQuickStateChips() {
+      const container = document.getElementById('quickStateChips');
+      if (!container || !window.AgriMaps || !AgriMaps.INDIAN_STATES_DATA) return;
+
+      const states = Object.keys(AgriMaps.INDIAN_STATES_DATA);
+      container.innerHTML = states.map(st => {
+        const data = AgriMaps.INDIAN_STATES_DATA[st];
+        const isActive = st === 'Punjab' ? 'active' : '';
+        return `
+          <button type="button" class="state-chip-btn ${isActive}" data-state="${st}" onclick="onQuickStateChipClick('${st}')">
+            <span>${data.icon || '🌾'}</span>
+            <span>${st}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function updateActiveChip(stateName) {
+      const chips = document.querySelectorAll('.state-chip-btn');
+      chips.forEach(chip => {
+        if (chip.getAttribute('data-state') === stateName) {
+          chip.classList.add('active');
+          chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        } else {
+          chip.classList.remove('active');
+        }
       });
     }
 
+    // 4. Initialize Map with Hand Drag & Click Handlers
+    function initMap() {
+      const initialLat = 30.9010;
+      const initialLon = 75.8573;
+
+      mapInstance = AgriMaps.initFarmMap('farmPickerMap', initialLat, initialLon, (lat, lon) => {
+        // Called when user moves the marker pin or clicks on the map
+        onMapLocationChangedByHand(lat, lon);
+      });
+    }
+
+    // 5. Handle User Changing Location by Hand (Drag or Click)
+    function onMapLocationChangedByHand(lat, lon) {
+      document.getElementById('displayLat').innerText = lat.toFixed(4);
+      document.getElementById('displayLon').innerText = lon.toFixed(4);
+
+      // Perform spatial nearest-neighbor district lookup
+      const match = AgriMaps.findNearestDistrict(lat, lon);
+      if (match) {
+        applyLocationAttributes(match, false);
+      }
+    }
+
+    // 6. Apply Found Location Attributes to Side Text Box and Controls
+    function applyLocationAttributes(data, recenterMap = true) {
+      const stateName = data.state;
+      const districtName = data.district.name || data.district;
+
+      // Update State & District selects
+      const stateSelect = document.getElementById('farmState');
+      if (stateSelect.value !== stateName) {
+        stateSelect.value = stateName;
+        populateDistricts(stateName, districtName);
+      } else {
+        document.getElementById('farmDistrict').value = districtName;
+      }
+
+      // Update Active State Chip
+      updateActiveChip(stateName);
+
+      // Update Agronomic Attributes Form on the right
+      setSelectValueOrAdd('farmSoilType', data.soil);
+      setSelectValueOrAdd('farmIrrigation', data.irrigation);
+
+      document.getElementById('farmWaterSource').value = data.waterSource || data.water_source || "Groundwater Tube-well";
+      if (data.waterAvailability) {
+        document.getElementById('farmWaterAvailability').value = data.waterAvailability;
+      }
+      document.getElementById('farmPrevCrop').value = data.prevCrop || data.typical_prev_crop || "Wheat";
+      document.getElementById('farmCurrCrop').value = data.currCrop || data.typical_curr_crop || "Maize";
+      document.getElementById('farmName').value = `${districtName} Precision Farm`;
+
+      if (data.elevation) {
+        document.getElementById('displayElevation').innerText = `~${data.elevation} meters`;
+      }
+
+      // Update Badge & Popup
+      const badgeText = `GPS Locked (${districtName}, ${stateName})`;
+      const badgeEl = document.getElementById('geoStatusBadge');
+      badgeEl.innerText = badgeText;
+      badgeEl.className = "badge badge-emerald status-highlight-flash";
+
+      // Notice update
+      const syncNotice = document.getElementById('syncNotice');
+      syncNotice.innerText = `● Synced to ${districtName}, ${stateName}`;
+
+      if (recenterMap && mapInstance) {
+        const targetLat = data.district.lat || data.lat;
+        const targetLon = data.district.lon || data.lon;
+        document.getElementById('displayLat').innerText = targetLat.toFixed(4);
+        document.getElementById('displayLon').innerText = targetLon.toFixed(4);
+        mapInstance.setLocation(targetLat, targetLon, `<b>Selected Farm Location</b><br>${districtName}, ${stateName}`, 12);
+      } else if (mapInstance && mapInstance.marker) {
+        mapInstance.marker.setPopupContent(`<b>Selected Farm Location</b><br>${districtName}, ${stateName}`);
+        mapInstance.marker.openPopup();
+      }
+
+      // Auto-save to AgriState in background
+      persistToAgriState(stateName, districtName, parseFloat(document.getElementById('displayLat').innerText), parseFloat(document.getElementById('displayLon').innerText));
+    }
+
+    function setSelectValueOrAdd(selectId, value) {
+      const select = document.getElementById(selectId);
+      if (!select || !value) return;
+
+      let matchedOption = null;
+      for (let i = 0; i < select.options.length; i++) {
+        const opt = select.options[i];
+        if (opt.value === value || opt.value.toLowerCase().includes(value.toLowerCase()) || value.toLowerCase().includes(opt.value.toLowerCase())) {
+          matchedOption = opt;
+          break;
+        }
+      }
+
+      if (matchedOption) {
+        select.value = matchedOption.value;
+      } else {
+        const newOpt = document.createElement('option');
+        newOpt.value = value;
+        newOpt.text = value;
+        select.appendChild(newOpt);
+        select.value = value;
+      }
+    }
+
+    // 7. Event Handler: State Dropdown Changed by User
+    function updateDistricts() {
+      const selectedState = document.getElementById('farmState').value;
+      const stateData = AgriMaps.getStateData(selectedState);
+      if (!stateData) return;
+
+      populateDistricts(selectedState);
+      const firstDistrict = stateData.districts[0];
+
+      applyLocationAttributes({
+        state: selectedState,
+        stateData: stateData,
+        district: firstDistrict,
+        soil: stateData.soil,
+        irrigation: stateData.irrigation,
+        waterSource: stateData.water_source,
+        waterAvailability: stateData.water_availability,
+        prevCrop: stateData.typical_prev_crop,
+        currCrop: stateData.typical_curr_crop,
+        elevation: stateData.elevation_m
+      }, true);
+    }
+
+    // 8. Event Handler: District Dropdown Changed by User
+    function onDistrictChanged() {
+      const selectedState = document.getElementById('farmState').value;
+      const selectedDistrictName = document.getElementById('farmDistrict').value;
+      const stateData = AgriMaps.getStateData(selectedState);
+      if (!stateData) return;
+
+      const district = stateData.districts.find(d => d.name === selectedDistrictName) || stateData.districts[0];
+      document.getElementById('displayLat').innerText = district.lat.toFixed(4);
+      document.getElementById('displayLon').innerText = district.lon.toFixed(4);
+      document.getElementById('farmName').value = `${district.name} Precision Farm`;
+      document.getElementById('geoStatusBadge').innerText = `GPS Locked (${district.name}, ${selectedState})`;
+
+      mapInstance.setLocation(district.lat, district.lon, `<b>Selected Farm Location</b><br>${district.name}, ${selectedState}`, 12);
+      persistToAgriState(selectedState, district.name, district.lat, district.lon);
+    }
+
+    // 9. Quick State Chip Click
+    function onQuickStateChipClick(stateName) {
+      document.getElementById('farmState').value = stateName;
+      updateDistricts();
+    }
+
+    // 10. Search Location & Autocomplete Logic
+    function handleSearchInput(e) {
+      const query = e.target.value.trim();
+      const dropdown = document.getElementById('searchDropdown');
+
+      clearTimeout(searchDebounceTimer);
+      if (query.length < 1) {
+        dropdown.style.display = 'none';
+        searchResultsCache = [];
+        return;
+      }
+
+      searchDebounceTimer = setTimeout(() => {
+        const results = AgriMaps.searchLocations(query);
+        searchResultsCache = results;
+        activeSearchResultIndex = -1;
+
+        if (results.length === 0) {
+          dropdown.innerHTML = `
+            <div style="padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+              No Indian districts or states matching "<strong>${query}</strong>"
+            </div>
+          `;
+          dropdown.style.display = 'block';
+          return;
+        }
+
+        dropdown.innerHTML = results.map((item, idx) => `
+          <div class="search-suggestion-item" data-index="${idx}" onclick="selectSearchResultByIndex(${idx})">
+            <div>
+              <strong style="color: var(--text-main);">${item.title}</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${item.subtitle}</div>
+            </div>
+            <span style="font-size: 0.72rem; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+              ${item.lat.toFixed(2)}°N, ${item.lon.toFixed(2)}°E
+            </span>
+          </div>
+        `).join('');
+
+        dropdown.style.display = 'block';
+      }, 150);
+    }
+
+    function handleSearchKeydown(e) {
+      const dropdown = document.getElementById('searchDropdown');
+      if (dropdown.style.display === 'none' || searchResultsCache.length === 0) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          triggerSearchLocation();
+        }
+        return;
+      }
+
+      const items = dropdown.querySelectorAll('.search-suggestion-item');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSearchResultIndex = (activeSearchResultIndex + 1) % items.length;
+        highlightActiveSearchItem(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSearchResultIndex = (activeSearchResultIndex - 1 + items.length) % items.length;
+        highlightActiveSearchItem(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeSearchResultIndex >= 0 && activeSearchResultIndex < searchResultsCache.length) {
+          selectSearchResultByIndex(activeSearchResultIndex);
+        } else {
+          triggerSearchLocation();
+        }
+      } else if (e.key === 'Escape') {
+        dropdown.style.display = 'none';
+      }
+    }
+
+    function highlightActiveSearchItem(items) {
+      items.forEach((it, idx) => {
+        if (idx === activeSearchResultIndex) {
+          it.classList.add('selected');
+          it.scrollIntoView({ block: 'nearest' });
+        } else {
+          it.classList.remove('selected');
+        }
+      });
+    }
+
+    function selectSearchResultByIndex(idx) {
+      const item = searchResultsCache[idx];
+      if (!item) return;
+
+      document.getElementById('mapLocationSearch').value = `${item.district}, ${item.state}`;
+      document.getElementById('searchDropdown').style.display = 'none';
+
+      const stateData = item.stateData || AgriMaps.getStateData(item.state);
+      const districtObj = stateData.districts.find(d => d.name === item.district) || { name: item.district, lat: item.lat, lon: item.lon };
+
+      applyLocationAttributes({
+        state: item.state,
+        stateData: stateData,
+        district: districtObj,
+        soil: stateData.soil,
+        irrigation: stateData.irrigation,
+        waterSource: stateData.water_source,
+        waterAvailability: stateData.water_availability,
+        prevCrop: stateData.typical_prev_crop,
+        currCrop: stateData.typical_curr_crop,
+        elevation: stateData.elevation_m
+      }, true);
+    }
+
+    function triggerSearchLocation() {
+      const query = document.getElementById('mapLocationSearch').value.trim();
+      if (!query) return;
+
+      const results = AgriMaps.searchLocations(query);
+      if (results.length > 0) {
+        selectSearchResultByIndex(0);
+      } else {
+        alert(`Location "${query}" not found in Indian agricultural database. Please check spelling or select from quick state chips.`);
+      }
+    }
+
+    // Hide search dropdown on click outside
+    document.addEventListener('click', (e) => {
+      const searchBox = document.getElementById('mapLocationSearch');
+      const dropdown = document.getElementById('searchDropdown');
+      if (dropdown && e.target !== searchBox && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // 11. GPS Location Finder
     function locateCurrentPosition() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            mapInstance.map.setView([lat, lon], 14);
-            mapInstance.marker.setLatLng([lat, lon]);
-            document.getElementById('displayLat').innerText = lat.toFixed(4);
-            document.getElementById('displayLon').innerText = lon.toFixed(4);
-            document.getElementById('geoStatusBadge').innerText = "Live GPS Location";
+            mapInstance.setLocation(lat, lon, "<b>Live GPS Position</b>", 13);
+            onMapLocationChangedByHand(lat, lon);
           },
           () => {
             alert("Geolocation permission denied or timed out. Defaulted to Sahnewal, Ludhiana.");
@@ -219,60 +671,169 @@
       }
     }
 
+    // 12. Switch Farm Tabs
     function switchActiveFarm(id) {
       currentFarmId = id;
       if (id === 1) {
         document.getElementById('tabFarm1').className = "btn btn-primary btn-sm";
         document.getElementById('tabFarm2').className = "btn btn-secondary btn-sm";
-        document.getElementById('farmName').value = "Sahnewal Golden Acre Farm";
         document.getElementById('farmArea').value = "5.0";
-        document.getElementById('farmPrevCrop').value = "Wheat (PBW 550)";
-        document.getElementById('farmCurrCrop').value = "Maize (Corn)";
-        mapInstance.map.setView([30.9010, 75.8573], 13);
-        mapInstance.marker.setLatLng([30.9010, 75.8573]);
-        document.getElementById('displayLat').innerText = "30.9010";
-        document.getElementById('displayLon').innerText = "75.8573";
+        const pbData = AgriMaps.getStateData("Punjab");
+        const ludhiana = pbData.districts.find(d => d.name === "Ludhiana") || pbData.districts[0];
+        applyLocationAttributes({
+          state: "Punjab",
+          stateData: pbData,
+          district: ludhiana,
+          soil: "Alluvial Loam",
+          irrigation: "Subsurface Drip + Tube-well",
+          waterSource: "Deep Groundwater Tube-well (180 ft)",
+          waterAvailability: "Abundant (High)",
+          prevCrop: "Wheat (PBW 550)",
+          currCrop: "Maize (Corn)",
+          elevation: 244
+        }, true);
+        document.getElementById('farmName').value = "Sahnewal Golden Acre Farm";
       } else {
         document.getElementById('tabFarm1').className = "btn btn-secondary btn-sm";
         document.getElementById('tabFarm2').className = "btn btn-primary btn-sm";
-        document.getElementById('farmName').value = "Khamanon Canal Farm";
         document.getElementById('farmArea').value = "3.5";
-        document.getElementById('farmPrevCrop').value = "Mustard";
-        document.getElementById('farmCurrCrop').value = "Basmati Rice";
-        mapInstance.map.setView([30.8200, 76.2200], 13);
-        mapInstance.marker.setLatLng([30.8200, 76.2200]);
-        document.getElementById('displayLat').innerText = "30.8200";
-        document.getElementById('displayLon').innerText = "76.2200";
+        const pbData = AgriMaps.getStateData("Punjab");
+        const khamanon = pbData.districts.find(d => d.name === "Fatehgarh Sahib") || pbData.districts[0];
+        applyLocationAttributes({
+          state: "Punjab",
+          stateData: pbData,
+          district: khamanon,
+          soil: "Clay Loam",
+          irrigation: "Canal Siphon + Furrow Basin",
+          waterSource: "Sirhind Feeder Canal",
+          waterAvailability: "Seasonal Reliable",
+          prevCrop: "Mustard (Pusa Bold)",
+          currCrop: "Basmati Rice (Pusa 1509)",
+          elevation: 252
+        }, true);
+        document.getElementById('farmName').value = "Khamanon Canal Farm";
       }
     }
 
     function addNewFarmPrompt() {
-      const name = prompt("Enter New Farm Parcel Name:", "Ludhiana North Farm");
+      const stateName = document.getElementById('farmState').value;
+      const districtName = document.getElementById('farmDistrict').value;
+      const defaultName = `${districtName} Precision Plot`;
+      const name = prompt("Enter New Farm Parcel Name:", defaultName);
       if (name) {
-        alert(`Farm "${name}" added successfully! Configure parameters and save.`);
         document.getElementById('farmName').value = name;
+        alert(`Farm "${name}" added! Position on map or search other states, configure attributes, and click "Save Farm Profile".`);
       }
     }
 
-    async function saveFarmProfile(e) {
-      e.preventDefault();
-      const payload = {
+    // 13. Persist to AgriState & localStorage
+    function persistToAgriState(stateName, districtName, lat, lon) {
+      if (!window.AgriState) return;
+
+      const activeFarm = {
         id: currentFarmId,
         name: document.getElementById('farmName').value,
-        location_name: `${document.getElementById('farmDistrict').value}, ${document.getElementById('farmState').value}`,
-        latitude: parseFloat(document.getElementById('displayLat').innerText),
-        longitude: parseFloat(document.getElementById('displayLon').innerText),
-        area_acres: parseFloat(document.getElementById('farmArea').value),
+        location_name: `${districtName}, ${stateName}`,
+        latitude: lat,
+        longitude: lon,
+        elevation_m: parseInt(document.getElementById('displayElevation').innerText.replace(/\D/g, '')) || 244,
+        area_acres: parseFloat(document.getElementById('farmArea').value) || 5.0,
         current_crop: document.getElementById('farmCurrCrop').value,
-        irrigation_method: document.getElementById('farmIrrigation').value
+        current_season: "Kharif",
+        previous_crop: document.getElementById('farmPrevCrop').value,
+        irrigation_method: document.getElementById('farmIrrigation').value,
+        water_source: document.getElementById('farmWaterSource').value,
+        water_availability: document.getElementById('farmWaterAvailability').value,
+        soil: {
+          soil_type: document.getElementById('farmSoilType').value,
+          ph: 6.8,
+          nitrogen_kg_ha: 260.0,
+          phosphorus_kg_ha: 22.5,
+          potassium_kg_ha: 280.0,
+          organic_carbon_pct: 0.62,
+          health_score: 85
+        },
+        water: {
+          source: document.getElementById('farmWaterSource').value,
+          ph: 7.2,
+          ec_ds_m: 0.65,
+          tds_ppm: 420.0,
+          suitability_score: 88
+        }
       };
+
+      AgriState.activeFarm = activeFarm;
+    }
+
+    // 14. Load Initial Farm
+    function loadActiveFarmFromState() {
+      if (window.AgriState && AgriState.activeFarm) {
+        const farm = AgriState.activeFarm;
+        if (farm.latitude && farm.longitude) {
+          const match = AgriMaps.findNearestDistrict(farm.latitude, farm.longitude);
+          if (match) {
+            applyLocationAttributes(match, true);
+            if (farm.name) document.getElementById('farmName').value = farm.name;
+            if (farm.area_acres) document.getElementById('farmArea').value = farm.area_acres;
+          }
+        }
+      }
+    }
+
+    // 15. Save Farm Profile Form Submission
+    async function saveFarmProfile(e) {
+      e.preventDefault();
+      const stateName = document.getElementById('farmState').value;
+      const districtName = document.getElementById('farmDistrict').value;
+      const lat = parseFloat(document.getElementById('displayLat').innerText);
+      const lon = parseFloat(document.getElementById('displayLon').innerText);
+      const area = parseFloat(document.getElementById('farmArea').value) || 5.0;
+      const currCrop = document.getElementById('farmCurrCrop').value;
+      const prevCrop = document.getElementById('farmPrevCrop').value;
+      const irrigation = document.getElementById('farmIrrigation').value;
+      const soilType = document.getElementById('farmSoilType').value;
+      const waterSource = document.getElementById('farmWaterSource').value;
+      const waterAvail = document.getElementById('farmWaterAvailability').value;
+      const farmName = document.getElementById('farmName').value;
+
+      const payload = {
+        id: currentFarmId,
+        name: farmName,
+        location_name: `${districtName}, ${stateName}`,
+        latitude: lat,
+        longitude: lon,
+        area_acres: area,
+        current_crop: currCrop,
+        previous_crop: prevCrop,
+        irrigation_method: irrigation,
+        water_source: waterSource,
+        water_availability: waterAvail,
+        soil: {
+          soil_type: soilType,
+          ph: 6.8,
+          nitrogen_kg_ha: 260.0,
+          phosphorus_kg_ha: 22.5,
+          potassium_kg_ha: 280.0,
+          organic_carbon_pct: 0.62
+        },
+        water: {
+          source: waterSource,
+          ph: 7.2,
+          ec_ds_m: 0.65,
+          tds_ppm: 420.0
+        }
+      };
+
+      // Persist in localStorage
+      AgriState.activeFarm = payload;
 
       try {
         await AgriAPI.saveFarm(payload);
-        alert("✅ Farm Profile successfully saved! Proceeding to Farm & Soil Analysis.");
+        alert(`✅ Farm Profile "${farmName}" successfully saved!\nLocation: ${districtName}, ${stateName} (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)\nProceeding to Farm & Soil Analysis.`);
         window.location.href = "/farm-analysis";
       } catch (err) {
-        alert("Farm saved locally in browser memory.");
+        console.warn("Backend save failed, saved locally:", err);
+        alert(`✅ Farm Profile "${farmName}" saved locally!\nLocation: ${districtName}, ${stateName}\nProceeding to Farm & Soil Analysis.`);
         window.location.href = "/farm-analysis";
       }
     }

@@ -69,31 +69,48 @@ const AgriState = {
   },
 
   // Active Farm Profile
-  activeFarm: {
-    id: 1,
-    name: "Sahnewal Golden Acre Farm",
-    location_name: "Sahnewal, Ludhiana, Punjab",
-    latitude: 30.9010,
-    longitude: 75.8573,
-    area_acres: 5.0,
-    current_crop: "Maize",
-    current_season: "Kharif",
-    soil: {
-      soil_type: "Alluvial Loam",
-      ph: 6.8,
-      nitrogen_kg_ha: 260.0,
-      phosphorus_kg_ha: 22.5,
-      potassium_kg_ha: 280.0,
-      organic_carbon_pct: 0.62,
-      health_score: 85
-    },
-    water: {
-      source: "Deep Groundwater Tube-well",
-      ph: 7.2,
-      ec_ds_m: 0.65,
-      tds_ppm: 420.0,
-      suitability_score: 88
+  get activeFarm() {
+    try {
+      const saved = localStorage.getItem('agriwise_active_farm');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      id: 1,
+      name: "Sahnewal Golden Acre Farm",
+      location_name: "Sahnewal, Ludhiana, Punjab",
+      latitude: 30.9010,
+      longitude: 75.8573,
+      area_acres: 5.0,
+      current_crop: "Maize (Corn)",
+      current_season: "Kharif",
+      previous_crop: "Wheat (PBW 550)",
+      irrigation_method: "Subsurface Drip + Tube-well",
+      soil: {
+        soil_type: "Alluvial Loam",
+        ph: 6.8,
+        nitrogen_kg_ha: 260.0,
+        phosphorus_kg_ha: 22.5,
+        potassium_kg_ha: 280.0,
+        organic_carbon_pct: 0.62,
+        health_score: 85
+      },
+      water: {
+        source: "Deep Tube-well (180 ft)",
+        ph: 7.2,
+        ec_ds_m: 0.65,
+        tds_ppm: 420.0,
+        suitability_score: 88
+      }
+    };
+  },
+  set activeFarm(farm) {
+    if (farm) {
+      localStorage.setItem('agriwise_active_farm', JSON.stringify(farm));
     }
+  },
+
+  setActiveFarm(farm) {
+    this.activeFarm = farm;
   },
 
   // Selected crop & seed across decision pipeline

@@ -44,7 +44,7 @@
       <div class="page-title-bar">
         <div class="page-title-left">
           <h1>⛅ Live Weather & Dynamic Agronomic Advisory</h1>
-          <p>Real-time meteorological observation from <strong>Open-Meteo Global Station</strong> for <strong>Sahnewal, Ludhiana (30.9010° N, 75.8573° E)</strong>.</p>
+          <p>Real-time meteorological observation from <strong>Open-Meteo Global Station</strong> for <strong id="weatherLocationSubtitle">Sahnewal, Ludhiana (30.9010° N, 75.8573° E)</strong>.</p>
         </div>
         <div class="page-title-actions">
           <button class="btn btn-secondary btn-sm" onclick="refreshWeather()">🔄 Refresh Live Data</button>
@@ -168,7 +168,15 @@
   <script>
     async function loadWeatherData() {
       try {
-        const data = await AgriAPI.getLiveWeather(30.9010, 75.8573, "Sahnewal, Ludhiana");
+        const farm = (window.AgriState && window.AgriState.activeFarm) || {};
+        const lat = farm.latitude || 30.9010;
+        const lon = farm.longitude || 75.8573;
+        const loc = farm.location_name || "Sahnewal, Ludhiana";
+        const subtitleEl = document.getElementById('weatherLocationSubtitle');
+        if (subtitleEl) {
+          subtitleEl.innerText = `${loc} (${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E)`;
+        }
+        const data = await AgriAPI.getLiveWeather(lat, lon, loc);
         renderWeather(data);
       } catch (e) {
         console.warn("Using offline fallback", e);
